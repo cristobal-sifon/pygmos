@@ -1,0 +1,60 @@
+<html>
+<head>
+  <meta name="AUTHOR" content="Crist&oacute;bal Sif&oacute;n Andalaft">
+  <title>pygmos by Crist&oacute;bal Sif&oacute;n</title>
+</head>
+
+<body style="color: rgb(0, 0, 0); background-color: #FFFFFF;" alink="#ff0000" link="#0000ee" vlink="#551a8b">
+  <br>
+  <code style="margin-left:10pt"><big><big><big><big><big><strong>pygmos</strong></big></big></big></big></big></code><br><br>
+  <a href="pygmos.tar.gz">The package</a> contains the following files. See the <a href="help.html">help page</a> for further
+  information.
+  <dl style="width:500pt;margin-left:25pt">
+    <dt><strong><code>pygmos</code></strong>
+      <dd>The main code. Calls upon the IRAF tasks throughout the reduction process.
+          Each of the following files is called automatically by <code>PyGMOS</code> when required.
+    <dt><strong><code>align.cl</code></strong>
+      <dd>Used to align the spectra by wavelength, starting at 4000&Aring;. This task is optional and should only
+	  be used for visualization purposes. Written by Heather Andrews, who is now at Leiden.
+    <dt><strong><code>check_gswave.py</code></strong>
+      <dd>Useful in the interactive mode. Used to compare the obtained wavelengths with catalogued wavelengths.
+    <dt><strong><code>CuAr_GMOS.dat</code></strong>
+      <dd>Catalog of lines of the CuAr lamp used in most GMOS observations.
+    <dt><strong><code>inventory.py</code></strong>
+      <dd>Used to identify each fits file with the corrresponding object.
+    <dt><strong><code>lacos_spec.cl</code></strong>
+      <dd>Cosmic-ray removal task written by P. van Dokkum (<a href="http://www.astro.yale.edu/dokkum/lacosmic/">Official page</a>; 
+	  <a href="http://adsabs.harvard.edu/abs/2001PASP..113.1420V">reference</a>)
+    <dt><strong><code>pygmos.params</code></strong>
+      <dd>A file with the most used parameters for the <code>IRAF</code> tasks used by <code>PyGMOS</code>.
+          This file should be "dumped" and modified to fit the dataset being reduced.
+    <dt><strong><code>pygmos.params.extended</code></strong>
+      <dd>An extended version of <code>pygmos.params</code>.
+    <dt><strong><code>CuAr_spectrum/</code></strong>
+      <dd>A directory with images of the CuAr spectrum.
+  </dl>
+  <br>
+
+<p style="width:600pt;text-align:justify"><strong>Summary of <code>PyGMOS</code> workings:</strong>
+  <code>PyGMOS</code> executes all the necessary tasks to go from a
+  set of raw observations and calibration files to a set of extracted scientific spectra. For this,
+  it wraps all the IRAF/GMOS tasks distributed by the Gemini Observatory. It also includes the
+  Lagrangian Cosmic-Ray Rejection task <code>LACos</code> written by P. van Dokkum, used with
+  permission.
+</p>
+
+<br>
+<code>PyGMOS</code> is distributed from this page to be freely used, modified and distributed with the appropriate acknowledgements.
+<br>
+Please keep me updated if you do so by <a href="mailto:cjsifon@astro.puc.cl">writing to me</a>.
+<br>
+<br>
+&copy; Crist&oacute;bal Sif&oacute;n Andalaft
+<br>
+Last Updated July 17, 2012
+<br>
+<a href="../">Home</a>
+
+</body>
+
+</html>

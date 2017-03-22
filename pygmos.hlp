@@ -1,0 +1,12 @@
+
+
+PyGMOS: Spectroscopic data reduction software for GMOS on the Gemini Telescopes
+
+SYNTAX: pygmos object=<object> [-p <paramfile] [<param1>=<value1>] ...
+  > to dump a parameter file:      pygmos -d
+  > to dump a full parameter file: pygmos -dd
+  > this help file:                pygmos -h
+
+  For more, visit http://www.astro.puc.cl/~cjsifon/pygmos/
+
+

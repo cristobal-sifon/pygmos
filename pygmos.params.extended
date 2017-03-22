@@ -1,0 +1,388 @@
+# Default extended configuration file for PyGMOS
+# Cristóbal Sifón A., June 2012
+#
+
+@gdisplay
+---------
+fl_paste      =  no                                             # Paste images to one for imexamine
+fl_bias       =  no                                             # Rough bias subtraction
+rawpath       =  adata                                          # Path for input image if not included in name
+gap           =  default                                        # Size of the gap between the CCDs (in pixels)
+z1            =  0.                                             # Lower limit if not autoscaling
+z2            =  0.                                             # Upper limit if not autoscaling
+fl_sat        =  no                                             # Flag saturated pixels
+fl_imexam     =  no                                            # If possible, run imexam
+signal        =  INDEF                                          # Flag pixels with signal above this limit
+sci_ext       =  all                                            # Name of extension(s) to display
+observatory   =  )_.observatory                                 # Observatory (gemini-north or gemini-south)
+prefix        =  auto                                           # File prefix, (N/S)YYYYMMDDS if not auto
+key_detsec    =  DETSEC                                         # Header keyword for detector section
+key_datasec   =  DATASEC                                        # Header keyword for data section
+key_ccdsum    =  CCDSUM                                         # Header keyword for CCD binning
+gaindb        =  default                                        # Database with gain data
+verbose       =  no                                             # Verbose
+
+@gsflat
+-------
+fl_slitcorr   =  no                                             # Correct output for Illumination/Slit-Function
+slitfunc      =                                                 # Slit Function (MEF output of gsslitfunc)
+fl_keep       =  yes                                            # Keep imcombined flat?
+fl_over       =  no                                             # Subtract overscan level
+fl_trim       =  yes                                            # Trim off overscan region
+fl_bias       =  yes                                            # Subtract bias image
+fl_dark       =  no                                             # Subtract (scaled dark image)
+fl_fixpix     =  yes                                            # Interpolate across chip gaps
+fl_vardq      =  yes                                            # Create variance and data quality frames
+bias          =                                                 # Bias image
+dark          =                                                 # Dark image
+key_exptime   =  EXPTIME                                        # Exposure time header keyword
+key_biassec   =  BIASSEC                                        # Header keyword for overscan strip image section
+key_datasec   =  DATASEC                                        # Header keyword for data section (excludes the overscan)
+rawpath       =                                                 # GPREPARE: Path for input raw images
+sci_ext       =  SCI                                            # Name of science extension
+var_ext       =  VAR                                            # Name of variance extension
+dq_ext        =  DQ                                             # Name of data quality extension
+key_mdf       =  MASKNAME                                       # Header keyword for the MDF
+mdffile       =                                                 # MDF to use if keyword not found
+mdfdir        =  ./                                             # MDF database directory
+bpm           =                                                 # Name of bad pixel mask file or image
+gaindb        =  default                                        # Database with gain data
+gratingdb     =  gmos$data/GMOSgratings.dat                     # Gratings database file
+filterdb      =  gmos$data/GMOSfilters.dat                      # Filters database file
+bpmfile       =  gmos$data/chipgaps.dat                         # Info on location of chip gaps
+refimage      =                                                 # Reference image for slit positions
+qe_refim      =                                                 # QE wavelength reference image. (NOT YET IMPLEMENTED)
+fl_keep_qeim  =  yes                                            # Keep QE correction? (NOT YET IMPLEMENTED)
+qe_corrpref   =  qecorr                                         # Prefix for QE correction files. (NOT YET IMPLEMENTED)
+qe_corrimage  =                                                 # Name for QE correction data. (NOT YET IMPLEMENTED)
+qe_data       =  gmosQEfactors.dat                              # Data file that contains QE information. (NOT YET IMPLEMENTED)
+qe_datadir    =  gmos$data/                                     # Directory containg QE data file. (NOT YET IMPLEMENTED)
+sat           =  default                                        # Saturation level in raw images
+xoffset       =  INDEF                                          # X offset in wavelength [nm]
+yoffset       =  INDEF                                          # Y offset in unbinned pixels
+yadd          =  0.                                             # Additional pixels to add to each end of MOS slitlet lengths
+wave_limit    =  INDEF                                          # Upper wavelength limit of cut spectra (nm. Only for use with fl_detec=no.)
+fl_usegrad    =  yes                                            # Use gradient method to find MOS slits
+fl_emis       =  no                                             # mask emission lines from lamp (affected pixels set to 1. in output)
+nbiascontam   =  default                                        # Number of columns removed from overscan region
+biasrows      =  default                                        # Rows to use for overscan region
+minval        =  INDEF                                          # Minimum pixel value in normalized flat
+fl_inter      =  no                                             # Fit response interactively?
+fl_answer     =  yes                                            # Continue interactive fitting?
+fl_detec      =  yes                                            # Fit response detector by detector rather than slit by slit?
+fl_seprows    =  yes                                            # Fit and normalize each row separately?
+function      =  spline3                                        # Fitting function for response
+order         =  15                                             # Order of fitting function, minimum value=1
+low_reject    =  3.                                             # Low rejection in sigma of response fit
+high_reject   =  3.                                             # High rejection in sigma of response fit
+niterate      =  2                                              # Number of rejection iterations in response fit
+combine       =  average                                        # Combination operation
+reject        =  avsigclip                                      # Rejection algorithm
+masktype      =  goodvalue                                      # Mask type
+maskvalue     =  0.                                             # Mask value
+scale         =  mean                                           # Image scaling
+zero          =  none                                           # Image zeropoint offset
+weight        =  none                                           # Image weights
+statsec       =                                                 # Statistics section
+lthreshold    =  INDEF                                          # Lower threshold
+hthreshold    =  INDEF                                          # Upper threshold
+nlow          =  1                                              # minmax: Number of low pixels to reject
+nhigh         =  1                                              # minmax: Number of high pixels to reject
+nkeep         =  0                                              # Minimum to keep or maximum to reject
+mclip         =  yes                                            # Use median in sigma clipping algorithms?
+lsigma        =  3.                                             # Lower sigma clipping factor
+hsigma        =  3.                                             # Upper sigma clipping factor
+key_ron       =  RDNOISE                                        # Keyword for readout noise in e-
+key_gain      =  GAIN                                           # Keyword for gain in electrons/ADU
+ron           =  3.5                                            # Readout noise rms in electrons
+gain          =  2.2                                            # Gain in e-/ADU
+snoise        =  0.0                                            # ccdclip: Sensitivity noise (electrons)
+sigscale      =  0.1                                            # Tolerance for sigma clipping scaling correction
+pclip         =  -0.5                                           # pclip: Percentile clipping parameter
+grow          =  0.                                             # Radius (pixels for neighbor rejection)
+ovs_flinter   =  no                                             # Interactive overscan fitting?
+ovs_med       =  no                                             # Use median instead of average in column bias?
+ovs_func      =  chebyshev                                      # Overscan fitting function
+ovs_order     =  1                                              # Order of overscan fitting function
+ovs_lowr      =  3.                                             # Low sigma rejection factor
+ovs_highr     =  3.                                             # High sigma rejection factor
+ovs_niter     =  2                                              # Number of rejection iterations
+fl_double     =  no                                             # Make double flats for nod-and-shuffle science
+nshuffle      =  0                                              # Number of shuffle pixels (unbinned)
+logfile       =  gsflat.log                                     # Logfile name
+verbose       =  yes                                            # Verbose
+
+@gmosaic
+--------
+outpref       =  m                                              # Prefix for output images
+fl_paste      =  no                                             # Paste images instead of mosaic
+fl_vardq      =  no                                             # Propagate the variance and data quality planes
+fl_fixpix     =  yes                                            # Interpolate across chip gaps
+fl_clean      =  yes                                            # Clean imaging data outside imaging field
+geointer      =  linear                                         # Interpolant to use with geotran
+gap           =  default                                        # Gap between the CCDs in unbinned pixels
+bpmfile       =  gmos$data/chipgaps.dat                         # Info on location of chip gaps
+statsec       =  default                                        # Statistics section for cleaning
+obsmode       =  IMAGE                                          # Value of key_obsmode for imaging data
+sci_ext       =  SCI                                            # Science extension(s) to mosaic, use '' for raw data
+var_ext       =  VAR                                            # Variance extension(s) to mosaic
+dq_ext        =  DQ                                             # Data quality extension(s) to mosaic
+mdf_ext       =  MDF                                            # Mask definition file extension name
+key_detsec    =  DETSEC                                         # Header keyword for detector section
+key_ccdsec    =  CCDSEC                                         # Header keyword for CCD section
+key_datsec    =  DATASEC                                        # Header keyword for data section
+key_ccdsum    =  CCDSUM                                         # Header keyword for CCD binning
+key_obsmode   =  OBSMODE                                        # Header keyword for observing mode
+logfile       =  gmosaic.log                                    # Logfile
+fl_real       =  no                                             # Convert file to real before transforming
+verbose       =  yes                                            # Verbose
+
+@gsreduce
+---------
+outpref       =  gs                                             # Prefix for output images
+fl_over       =  no                                             # Subtract overscan level
+fl_trim       =  yes                                            # Trim off the overscan section
+fl_bias       =  yes                                            # Subtract bias image
+fl_gscrrej    =  no                                             # Clean images for cosmic rays
+fl_dark       =  no                                             # Subtract (scaled dark image)
+fl_qecorr     =  no                                             # QE correct the input images? (NOT YET IMPLEMENTED)
+fl_flat       =  yes                                            # Apply flat field correction
+fl_gmosaic    =  yes                                            # Mosaic science extensions
+fl_fixpix     =  yes                                            # Interpolate across chip gaps if mosaicing
+fl_gsappwave  =  yes                                            # Run gsappwave on reduced image
+fl_cut        =  yes                                            # Cut MOS slits into separate spectra if mosaicing
+fl_title      =  yes                                            # Put object id in title of cut spectra (MOS only)
+fl_vardq      =  yes                                            # Create variance and data quality frames
+bias          =                                                 # Bias image name
+dark          =                                                 # Dark image name
+flatim        =                                                 # Flatfield (output of GSFLAT image)
+geointer      =  linear                                         # Interpolation to use if mosaicing
+gradimage     =                                                 # Image to use for finding slit edges using the gradient
+refimage      =                                                 # Reference image for slit positions
+qe_refim      =                                                 # QE wavelength reference image. (NOT YET IMPLEMENTED)
+fl_keep_qeim  =  yes                                            # Keep QE correction? (NOT YET IMPLEMENTED)
+qe_corrpref   =  qecorr                                         # Prefix for QE correction files. (NOT YET IMPLEMENTED)
+qe_corrimage  =                                                 # Name for QE correction data. (NOT YET IMPLEMENTED)
+qe_data       =  gmosQEfactors.dat                              # Data file that contains QE information. (NOT YET IMPLEMENTED)
+qe_datadir    =  ./                                             # Directory containg QE data file. (NOT YET IMPLEMENTED)
+key_exptime   =  EXPTIME                                        # Header keyword for exposure time
+key_biassec   =  BIASSEC                                        # Header keyword for overscan strip image section.
+key_datasec   =  DATASEC                                        # Header keyword for data section (excludes the overscan)
+fl_inter      =  no                                             # Interactive cosmic ray cleaning fitting
+rawpath       =                                                 # GPREPARE: Path for input raw images
+sci_ext       =  SCI                                            # Name of science extension
+var_ext       =  VAR                                            # Name of variance extension
+dq_ext        =  DQ                                             # Name of data quality extension
+key_mdf       =  MASKNAME                                       # Header keyword for the Mask Definition File filename
+mdffile       =                                                 # MDF file to use if keyword not found
+mdfdir        =  gmos$data/                                     # MDF database directory
+bpm           =                                                 # Bad Pixel Mask filename
+gaindb        =  default                                        # Database with gain data
+gratingdb     =  gmos$data/GMOSgratings.dat                     # Gratings database file
+filterdb      =  gmos$data/GMOSfilters.dat                      # Filters database file
+xoffset       =  INDEF                                          # X offset in wavelength [nm]
+yoffset       =  INDEF                                          # Y offset in unbinned pixels
+yadd          =  0.                                             # Additional pixels to add to each end of MOS slitlet lengths
+wave_limit    =  INDEF                                          # Upper wavelength limit for cut spectra [nm]. Only for when fl_gscut=yes and input data has an OBSMODE of MO
+bpmfile       =  gmos$data/chipgaps.dat                         # Info on location of chip gaps
+key_ron       =  RDNOISE                                        # Header keyword for readout noise
+key_gain      =  GAIN                                           # Header keyword for gain (e-/ADU)
+ron           =  3.5                                            # Readout noise value to use if keyword not found
+gain          =  2.2                                            # Gain value to use if keyword not found
+sat           =  default                                        # Saturation level in raw images
+key_nodcount  =  NODCOUNT                                       # Header keyword with number of nod cycles
+key_nodpix    =  NODPIX                                         # Header keyword with shuffle distance
+ovs_flinter   =  no                                             # Interactive overscan fitting
+ovs_med       =  no                                             # Use median instead of average in column bias
+ovs_func      =  chebyshev                                      # Overscan fitting function
+ovs_order     =  1                                              # Order of overscan fitting function
+ovs_lowr      =  3.                                             # Low sigma rejection factor
+ovs_highr     =  3.                                             # High sigma rejection factor
+ovs_niter     =  2                                              # Number of rejection iterations
+nbiascontam   =  default                                        # Number of columns removed from overscan region
+biasrows      =  default                                        # Rows to use for overscan region
+logfile       =  gsreduce.log                                   # Logfile
+verbose       =  yes                                            # Verbose output?
+
+@lacos_spec
+-----------
+xorder        =  9                                              # order of object fit (0=no fit
+yorder        =  3                                              # order of sky line fit (0=no fit
+sigclip       =  4.5                                            # detection limit for cosmic rays (sigma
+sigfrac       =  0.5                                            # fractional detection limit for neighbouring pixels
+objlim        =  1                                              # contrast limit between CR and underlying object
+niter         =  4                                              # maximum number of iterations
+verbose       =  no
+
+@gswavelength
+-------------
+crval         =  CRVAL1                                         # Approximate wavelength at coordinate reference pixel
+cdelt         =  CD1_1                                          # Approximate dispersion
+crpix         =  CRPIX1                                         # Coordinate reference pixel
+key_dispaxis  =  DISPAXIS                                       # Header keyword for dispersion axis
+dispaxis      =  1                                              # Dispersion axis
+database      =  database                                       # Directory for files containing feature data
+coordlist     =  CuAr_GMOS.dat                                  # User coordinate list, line list. PROVIDE FULL PATH
+gratingdb     =  gmos$data/GMOSgratings.dat                     # Gratings database file
+filterdb      =  gmos$data/GMOSfilters.dat                      # Filters database file
+fl_inter      =  no                                             # Examine identifications interactively
+section       =  default                                        # Image section for running identify
+nsum          =  10                                             # Number of lines or columns to sum
+ftype         =  emission                                       # Feature type
+fwidth        =  10.                                            # Feature width in pixels
+gsigma        =  1.5                                            # Gaussian sigma for smoothing
+cradius       =  12.                                            # Centering radius in pixels
+threshold     =  0.                                             # Feature threshold for centering
+minsep        =  5.                                             # Minimum pixel separation for features
+match         =  -6.                                            # Coordinate list matching limit, <0 pixels, >0 user
+function      =  chebyshev                                      # Coordinate fitting function
+order         =  4                                              # Order of coordinate fitting function
+sample        =  *                                              # Coordinate sample regions
+niterate      =  10                                             # Rejection iterations
+low_reject    =  3.                                             # Lower rejection sigma
+high_reject   =  3.                                             # Upper rejection sigma
+grow          =  0.                                             # Rejection growing radius
+refit         =  yes                                            # Refit coordinate function when running reidentify
+step          =  10                                             # Steps in lines or columns for reidentification
+trace         =  yes                                            # Use fit from previous step rather than central aperture
+nlost         =  15                                             # Maximum number of lost features
+maxfeatures   =  150                                            # Maximum number of features
+ntarget       =  30                                             # Number of features used for autoidentify
+npattern      =  5                                              # Number of features used for pattern matching (autoidentify
+fl_addfeat    =  yes                                            # Allow features to be added by reidentify
+aiddebug      =                                                 # Debug parameter for aidpars
+fl_dbwrite    =  YES                                            # Write results to database?
+fl_overwrite  =  yes                                            # Overwrite existing database entries?
+fl_gsappwave  =  no                                             # Run GSAPPWAVE on all images?
+fitcfunc      =  chebyshev                                      # Function for fitting coordinates
+fitcxord      =  4                                              # Order of fitting function in X-axis
+fitcyord      =  4                                              # Order of fitting function in Y-axis
+logfile       =  gswavelength.log                               # Logfile
+verbose       =  yes                                            # Verbose output?
+
+@gstransform
+------------
+outprefix     =  t                                              # Prefix for output spectra
+fl_stran      =  no                                             # Apply S-distortion correction
+sdistname     =                                                 # Names of S-distortions calibrations
+fl_wavtran    =  yes                                            # Apply wavelength calibration from arc spectrum
+wavtraname    =                                                 # Names of wavelength calibrations
+database      =  database                                       # Directory for calibration files
+fl_vardq      =  no                                             # Transform variance and data quality planes
+interptype    =  linear                                         # Interpolation type for transform
+lambda1       =  INDEF                                          # First output wavelength for transform (Ang)
+lambda2       =  INDEF                                          # Last output wavelength for transform (Ang)
+dx            =  INDEF                                          # Output wavelength to pixel conversion ratio for transform (Ang/pix)
+nx            =  INDEF                                          # Number of output pixels for transform (pix)
+lambdalog     =  no                                             # Logarithmic wavelength coordinate for transform
+ylog          =  no                                             # Logarithmic y coordinate for transform
+fl_flux       =  yes                                            # Conserve flux per pixel in the transform
+gratingdb     =  gmos$data/GMOSgratings.dat                     # Gratings database file
+filterdb      =  gmos$data/GMOSfilters.dat                      # Filters database file
+key_dispaxis  =  DISPAXIS                                       # Keyword for dispersion axis
+dispaxis      =  1                                              # Dispersion axis
+sci_ext       =  SCI                                            # Name of science extension
+var_ext       =  VAR                                            # Name of variance extension
+dq_ext        =  DQ                                             # Name of data quality extension
+logfile       =  gstransform.log                                # Logfile
+verbose       =  yes                                            # Verbose
+
+@gsskysub
+---------
+fl_answer     =  no                                             # Continue with interactive fitting
+outpref       =  s                                              # Output prefix
+sci_ext       =  SCI                                            # Name of science extension
+var_ext       =  VAR                                            # Name of variance extension
+dq_ext        =  DQ                                             # Name of data quality extension
+fl_vardq      =  no                                             # Propagate VAR/DQ planes
+long_sample   =  *                                              # Sky sample for LONGSLIT
+mos_sample    =  0.9                                            # MOS: Maximum fraction of slit length to use as sky sample
+mosobjsize    =  1.                                             # MOS: Size of object aperture in arcsec
+naverage      =  1                                              # Number of points in sample averaging
+function      =  chebyshev                                      # Function to fit
+order         =  1                                              # Order for fit
+low_reject    =  2.5                                            # Low rejection in sigma of fit
+high_reject   =  2.5                                            # High rejection in sigma of fit
+niterate      =  2                                              # Number of rejection iterations
+grow          =  0.                                             # Rejection growing radius in pixels
+fl_inter      =  no                                             # Fit interactively
+logfile       =  gsskysub.log                                   # Logfile name
+verbose       =  yes                                            # Verbose?
+
+@gsextract
+----------
+outprefix     =  e                                              # Output prefix
+refimages     =                                                 # Reference images for tracing apertures
+apwidth       =  1.                                             # Extraction aperture in arcsec diameter)
+fl_inter      =  no                                             # Run interactively?
+database      =  database                                       # Directory for calibration files
+find          =  yes                                            # Define apertures automatically?
+recenter      =  yes                                            # Recenter apertures?
+trace         =  yes                                            # Trace apertures?
+tfunction     =  chebyshev                                      # Trace fitting function
+torder        =  5                                              # Trace fitting function order
+tnsum         =  20                                             # Number of dispersion lines to sum for trace
+tstep         =  50                                             # Tracing step
+weights       =  none                                           # Extraction weights none|variance)
+clean         =  no                                             # Detect and replace bad pixels?
+lsigma        =  3.                                             # Lower rejection threshold for cleaning
+usigma        =  3.                                             # Upper rejection threshold for cleaning
+background    =  none                                           # Background subtraction method
+bfunction     =  chebyshev                                      # Background function
+border        =  1                                              # Order of background fit
+long_bsample  =  *                                              # LONGSLIT: backgr sample regions, WRT aperture
+mos_bsample   =  0.9                                            # MOS: fraction of slit length to use bkg+obj)
+bnaverage     =  1                                              # Number of samples to average over
+bniterate     =  2                                              # Number of rejection iterations
+blow_reject   =  2.5                                            # Background lower rejection sigma
+bhigh_reject  =  2.5                                            # Background upper rejection sigma
+bgrow         =  0.                                             # Background rejection growing radius pix)
+fl_vardq      =  no                                             # Propagate VAR/DQ planes? if yes, must use variance weighting)
+sci_ext       =  SCI                                            # Name of science extension
+var_ext       =  VAR                                            # Name of variance extension
+dq_ext        =  DQ                                             # Name of data quality extension
+key_ron       =  RDNOISE                                        # Keyword for readout noise in e-
+key_gain      =  GAIN                                           # Keyword for gain in electrons/ADU
+ron           =  3.5                                            # Default readout noise rms in electrons
+gain          =  2.2                                            # Default gain in e-/ADU
+logfile       =  gsextract.log                                  # Logfile
+verbose       =  yes                                            # Verbose?
+
+@imcombine
+----------
+headers       =                                                 # List of header files (optional)
+bpmasks       =                                                 # List of bad pixel masks (optional)
+rejmasks      =                                                 # List of rejection masks (optional)
+nrejmasks     =                                                 # List of number rejected masks (optional)
+expmasks      =                                                 # List of exposure masks (optional)
+sigmas        =                                                 # List of sigma images (optional)
+imcmb         =  $I                                             # Keyword for IMCMB keywords
+logfile       =  imcombine.log                                  # Log file
+combine       =  average                                        # Type of combine operation
+reject        =  none                                           # Type of rejection
+project       =  no                                             # Project highest dimension of input images?
+outtype       =  real                                           # Output image pixel datatype
+outlimits     =                                                 # Output limits (x1 x2 y1 y2 ...)
+offsets       =  wcs                                            # Input image offsets
+masktype      =  none                                           # Mask type
+maskvalue     =  0                                              # Mask value
+blank         =  0.                                             # Value if there are no pixels
+scale         =  none                                           # Image scaling
+zero          =  none                                           # Image zero point offset
+weight        =  none                                           # Image weights
+statsec       =                                                 # Image section for computing statistics
+expname       =  EXPTIME                                        # Image header exposure time keyword
+lthreshold    =  INDEF                                          # Lower threshold
+hthreshold    =  INDEF                                          # Upper threshold
+nlow          =  1                                              # minmax: Number of low pixels to reject
+nhigh         =  1                                              # minmax: Number of high pixels to reject
+nkeep         =  1                                              # Minimum to keep (pos) or maximum to reject (neg)
+mclip         =  yes                                            # Use median in sigma clipping algorithms?
+lsigma        =  3.                                             # Lower sigma clipping factor
+hsigma        =  3.                                             # Upper sigma clipping factor
+rdnoise       =  0.                                             # ccdclip: CCD readout noise (electrons)
+gain          =  1.                                             # ccdclip: CCD gain (electrons/DN)
+snoise        =  0.                                             # ccdclip: Sensitivity noise (fraction)
+sigscale      =  0.1                                            # Tolerance for sigma clipping scaling corrections
+pclip         =  -0.5                                           # pclip: Percentile clipping parameter
+grow          =  0.                                             # Radius (pixels) for neighbor rejection

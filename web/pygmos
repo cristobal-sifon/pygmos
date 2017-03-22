@@ -1,0 +1,582 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import glob
+import os
+import pyfits
+import sys
+from pyraf import iraf
+from iraf import gemini
+from iraf import gemtools
+from iraf import gmos
+
+# Other packages needed with the code:
+sys.path.append('pygmos_extras')
+import check_gswave
+import inventory as inv
+
+"""
+PyGMOS
+"""
+
+def main():
+  """
+  The pipeline itself. Reduces a set of GMOS spectra (MOS or longslit) given the name of the object
+  and, optionally, the number(s) of the masks wanted.
+  """
+  intro()
+  cluster, inter, mdfdir, lacosloc, align, alignloc, masks, coordlist, biasfile, cutdir = ReadParameters()
+
+  cluster = cluster.replace(' ', '_')
+  if masks == ['all']: # Default value, if nothing was specified in the console.
+    masks = sorted(inv.main('', cluster))
+    for i in range(len(masks)):
+      masks[i] = str(masks[i])
+  elif 'inventory+' in sys.argv:
+    inv.main('', cluster)
+  elif len(glob.glob(cluster + '.assoc')) == 0: # If the inventory file does not exist
+    inv.main('', cluster)
+
+  iraf.task(lacos_spec = lacosloc) # Cosmic-ray removal
+  if align:
+    iraf.task(align = alignloc)
+  iraf.set(stdimage='imtgmos') # GMOS display format
+  if 'ds9+' in sys.argv:
+    os.system('ds9 &')
+  if not biasfile:
+    #biasfile = '../../' + raw_input('No bias file provided. Please insert the name of the bias file to use.\n')
+    biasfile = '../../' + tasks.MakeBias() # NOT YET IMPLEMENTED
+  logfiles = ['gsflat.log', 'gsreduce.log', 'gswave.log', 'gstransform.log', \
+	      'gsskysub.log', 'imcombine.log', 'gsextract.log']
+  assocfiles = glob.glob('*.assoc')
+
+  for assoc in assocfiles:
+    waves = getWavelengths(assoc)
+    if assoc[:-6] == cluster:
+      print '\nObject:', cluster
+      if masks == 'longslit':
+	reduction.longslit(cluster, waves, assoc, logfiles, biasfile, inter, mdfdir, coordlist)
+      else:
+	Nmasks = 0.
+	for mask in masks:
+	  try:
+	    reduction.mos(cluster, mask, waves, assoc, logfiles, biasfile, inter, mdfdir,
+	                coordlist, Nmasks, cutdir, align)
+	  except IOError:
+	    pass
+  return
+
+#-------------------------------------------------------------------------------------------------------------#
+class reduction():
+  def mos(self, cluster, mask, waves, assoc, logfiles, bias, inter, mdfdir, coordlist, Nmasks, cutdir, align = False):
+    """
+    The reduction process for MOS data. It goes through file identification, calibration and
+    extraction of spectra.
+    """
+    combine = []
+    print 'Mask', mask, '\n'
+    path = os.path.join(cluster, 'mask' + mask)
+    for log in logfiles:
+      delete(os.path.join(path, log)) # New logfiles everytime the pipeline is run.
+    for wave in waves:
+      flat = getFile(assoc, mask = int(mask), obs = 'flat', wave = wave)
+      if flat: # finding the flat file is enough to know that the mask exists.
+	Nmasks += 1. / len(waves) # all wavelengths sum 1
+	arc = getFile(assoc, mask = int(mask), obs = 'arc', wave = wave)
+	science = getFile(assoc, mask = int(mask), obs = 'science', wave = wave)
+	Copy_MDF(science, mdfdir, cluster, str(mask))
+	iraf.chdir(path)
+	flat, comb = tasks.Call_gsflat(logfiles[0], flat, bias, mdfdir)
+	arc = tasks.Call_gsreduce(logfiles[1], arc, bias, mdfdir, comb)
+	science = tasks.Call_gsreduce(logfiles[1], science, bias, mdfdir, comb, flat = flat)
+	Nslits = getNslits(science)
+	science = tasks.Call_lacos(science, Nslits, niter = 2)
+	tasks.Call_gswave(logfiles[2], arc, coordlist)
+	tasks.Call_gstransform(logfiles[3], arc, arc)
+	if align:
+	  tasks.Call_align(arc, align, Nslits)
+	if inter.lower() in  ['y', 'yes']:
+	  while not check_gswave.Look('t' + arc, mask):
+	    Nstars = getNstars(arc)
+	    badslits = check_gswave.IdentifyBadSlits('t' + arc, Nstars)
+	    tasks.Call_gswave('gswave_badslits.log', arc, coordlist, database = 'database2', interactive = 'yes')
+	    check_gswave.ReplaceCalibrations(arc, badslits, Nstars)
+	    tasks.Call_gstransform(logfiles[3], arc, arc)
+	science = tasks.Call_gstransform(logfiles[3], science, arc)
+	if align:
+	  tasks.Call_align(science, align, Nslits)
+	tasks.Call_gdisplay(science + align, 1)
+	combine.append(tasks.Call_gsskysub(logfiles[4], science, align))
+	if len(combine) == len(waves):
+	  added = tasks.Call_imcombine(logfiles[5], cluster, str(mask), combine, Nslits)
+	  tasks.Call_gdisplay(added, 1)
+	  spectra = tasks.Call_gsextract(logfiles[6], cluster, str(mask))
+	  if align:
+	    aligned = tasks.Call_align(added, align, Nslits)
+	    tasks.Call_gdisplay(aligned, 1)
+	delete('tmp*')
+	iraf.chdir('../..')
+      else:
+	if wave == waves[0]:
+	  print 'No mask', mask
+    check_gswave.main(cluster, mask, logfiles[2], 'gswcheck.log')
+    if 'cut-' not in sys.argv:
+      tasks.Cut_spectra(cluster, str(mask), prefix = 'stgs', cutdir = cutdir)
+      tasks.Cut_spectra(cluster, str(mask), prefix = 'estgs', cutdir = cutdir)
+    return Nmasks
+
+  def longslit(self, cluster, waves, assoc, logfiles, bias, inter, mdfdir, coordlist):
+    combine = []
+    mask = 'longslit'
+    path = os.path.join(cluster.replace(' ', '_'), mask)
+    for log in logfiles:
+      delete(os.path.join(path, log)) # New logfiles everytime the pipeline is run.
+    for wave in waves:
+      flat = getFile(assoc, mask = mask, obs = 'flat', wave = wave)
+      if flat: # finding the flat file is enough to know that the mask exists.
+	arc = getFile(assoc, mask = mask, obs = 'arc', wave = wave)
+	science = getFile(assoc, mask = mask, obs = 'science', wave = wave)
+	iraf.chdir(path)
+	flat, comb = tasks.Call_gsflat(logfiles[0], flat, bias, mdfdir)
+	arc = tasks.Call_gsreduce(logfiles[1], arc, bias, mdfdir, comb)
+	science = tasks.Call_gsreduce(logfiles[1], science, bias, mdfdir, comb, flat = flat)
+	science = tasks.Call_lacos(science, longslit = True, niter = 2)
+	tasks.Call_gswave(logfiles[2], arc, coordlist)
+	tasks.Call_gstransform(logfiles[3], arc, arc)
+	if inter.lower() in  ['y', 'yes']:
+	  while not check_gswave.Look('t' + arc, mask, coordlist):
+	    Nstars = getNstars(arc)
+	    badslits = check_gswave.IdentifyBadSlits('t' + arc, Nstars)
+	    tasks.Call_gswave('gswave_badslits.log', arc, coordlist, database = 'database2', interactive = 'yes')
+	    check_gswave.ReplaceCalibrations(arc, badslits, Nstars)
+	    tasks.Call_gstransform(logfiles[3], arc, arc)
+	science = tasks.Call_gstransform(logfiles[3], science, arc)
+	tasks.Call_gdisplay(science, 1)
+	combine.append(tasks.Call_gsskysub(logfiles[4], science, interactive = 'yes'))
+	if len(combine) == len(waves):
+	  added = tasks.Call_imcombine(logfiles[5], cluster, str(mask), combine)
+	  tasks.Call_gdisplay(added, 1)
+	  spectra = tasks.Call_gsextract(logfiles[6], cluster, mask, interactive = 'yes')
+	  Naps = raw_input('Number of apertures extracted: ')
+	  while Naps == '': # In case you don't see the message after so many consecutive "Enters".
+	    Naps = raw_input('Please enter number of apertures extracted: ')
+	  Naps = int(Naps)
+	  tasks.Cut_apertures(cluster, Naps)
+	delete('tmp*')
+	iraf.chdir('../..')
+    
+reduction = reduction()
+#--------------------------------------------------------------------------------------------------#
+class tasks():
+  def Call_gdisplay(self, image, frame):
+    gmos.gdisplay(image, str(frame))
+    print 'Image', image, 'displayed in frame', frame
+    return
+
+  def Call_gsflat(self, logfile, flat, bias, mdfdir):
+    RemovePreviousFiles(flat, filetype = 'flat')
+    output = flat + '_flat'
+    comb = flat + '_comb'
+    gmos.gsflat(flat, output, fl_keep = 'yes', combflat = comb, fl_bias = 'yes', bias = bias, mdfdir = mdfdir, verbose = 'no')
+    return output, comb
+
+  def Call_gsreduce(self, logfile, science, bias, mdfdir, grad, flat = ''):
+    RemovePreviousFiles(science)
+    if flat:
+      gmos.gsreduce(science, fl_flat = 'yes', bias = bias, flatim = flat, mdfdir = mdfdir,
+                    gradimage = grad, verbose = 'no', logfile = logfile)
+    else: # will happen when gsreducing the arcs
+      gmos.gsreduce(science, fl_flat = 'no', bias = bias, mdfdir = mdfdir,
+                    gradimage = grad, verbose = 'no', logfile = logfile)
+    return 'gs' + science
+
+  def Call_lacos(self, science, Nslits, longslit = False, niter = 3):
+    print '-' * 30
+    print 'Removing cosmic rays...'
+    head = pyfits.getheader(science + '.fits')
+    gain = head['GAIN']
+    rdnoise = head['RDNOISE']
+    outfile = science + '_lacos.fits'
+    delete(outfile)
+    os.system('cp  -p ' + science + '.fits ' +  outfile)
+    makedir('slits')
+    if longslit:
+      slit = science + '[sci,1]'
+      outslit = 'slits/' + science + '_long'
+      outmask = 'slits/' + science + '_longmask'
+      iraf.lacos_spec(slit, outslit, outmask, gain = gain, readn = rdnoise, objlim = 1, niter = niter, verbose = 'no')
+      iraf.imcopy(outslit, outfile[:-5] + '[SCI,1,overwrite]', verbose = 'no')
+    else:
+      for i in range(1, Nslits + 1):
+	j = str(i)
+	slit = science + '[sci,' + j + ']'
+	outslit = 'slits/' + science + '_' + j
+	outmask = 'slits/' + science + '_mask' + j
+	iraf.lacos_spec(slit, outslit, outmask, gain = gain, readn = rdnoise, objlim = 1, niter = niter, verbose = 'no')
+	iraf.imcopy(outslit, outfile[:-5] + '[SCI,' + j + ',overwrite]', verbose = 'no')
+    delete('lacos*')
+    removedir('slits')
+    print '-' * 30
+    return outfile[:-5]
+
+  def Call_gswave(self, logfile, arc, coordlist, database = 'database', interactive = 'no'):
+    if interactive == 'yes':
+      go = raw_input('Go through the wavelength calibration (as opposed to using an existing one)? [yes]: ')
+      if go == '':
+	go = 'y'
+    else:
+      go = 'y'
+    if go.lower()[0] != 'n':
+      gmos.gswavelength(arc, database = database, coordlist = coordlist, fl_inter = interactive,
+                        order = 3, fitcxor = 3, fitcyor = 3, logfile = logfile, verbose = 'no')
+    return
+
+  def Call_gstransform(self, logfile, image, arc):
+    print '-' * 30
+    print 'Calling gstransform'
+    print image, '-->',
+    if image[-5:] == 'lacos':
+      out = 't' + image[:-6]
+    else:
+      out = 't' + image
+    print out
+    logfile = 'gstrans.log'
+    delete(out + '.fits')
+    gmos.gstransform(image, outimage = out, wavtraname = arc, logfile = logfile, verbose = 'no')
+    print '-' * 30
+    return out
+
+  def Call_align(self, inimage, suffix, Nslits):
+    print '-' * 30
+    print 'Aligning spectra...'
+    outimage = inimage + suffix
+    print inimage, '-->', outimage
+    os.system('cp ' + inimage + '.fits ' + outimage + '.fits')
+    delete('shifted*')
+    iraf.align(outimage)
+    delete('shifted*')
+    print '-' * 30
+    return outimage
+
+  def Call_gsskysub(self, logfile, tgsfile, align, interactive = 'no'):
+    print '-' * 30
+    print 'Calling gsskysub'
+    print tgsfile + align, '-->',
+    out = 's' + tgsfile
+    print out
+    delete(out + '.fits')
+    gmos.gsskysub(tgsfile + align, interactive, output = out, fl_inter = interactive, logfile = logfile, verbose = 'no')
+    print '-' * 30
+    return out
+
+  def Call_imcombine(self, logfile, cluster, mask, im, Nslits):
+    print '-' * 30
+    print 'Combining images', im
+    if mask == 'longslit':
+      outimage = 'stgs-longslit'
+    else:
+      outimage = 'stgs-' + cluster.replace(' ', '_') + '_mask' + mask
+    os.system('cp ' + im[0] + '.fits ' + outimage + '.fits')
+    f = pyfits.open(im[0] + '.fits ')
+    gain = float(f[0].header['GAINMULT'])
+    rdnoise = float(f[0].header['RDNOISE'])
+    f.close()
+    for i in range(1, Nslits + 1):
+      j = str(i)
+      inslit = im[0] + '[sci,' + j + '],' + im[1] + '[sci,' + j + ']'
+      outslit = outimage + '[sci,' + j + ',overwrite]'
+      iraf.imcombine(inslit, output = outslit, logfile = logfile, offsets = 'wcs', gain = gain, rdnoise = rdnoise)
+    print '-' * 30
+    return outimage
+
+  def Call_gsextract(self, logfile, cluster, mask, interactive = 'no'):
+    if mask == 'longslit':
+      infile = 'stgs-longslit'
+    else:
+      infile = 'stgs-' + cluster.replace(' ', '_') + '_mask' + mask
+    print '-' * 30
+    print 'Calling gsextract'
+    print infile, '-->',
+    out = 'e' + infile
+    print out
+    delete(out + '.fits')
+    gmos.gsextract(infile, fl_inter = interactive, logfile = logfile, verbose = 'no')
+    print '-' * 30
+    return out
+
+  def Cut_spectra(self, cluster, mask, prefix = 'estgs', cutdir = 'spectra'):
+    """
+    Takes the extracted spectra and copies them to a single folder called spectra/ (by default) in the parent folder.
+    All spectra from all objects will be in the same folder.
+    This is in order for the spectra to be ready to cross-correlate with xcsao (for this, you need the RVSAO package for IRAF).
+    """
+    print '-' * 30
+    print 'Cutting spectra...'
+    makedir(cutdir, overwrite = 'no')
+    spectra = []
+    filename = os.path.join(cluster.replace(' ', '_'), 'mask' + mask, prefix + '-' + cluster.replace(' ', '_') + '_mask' + mask)
+    Nslits = getNslits(filename)
+    for i in range(1, Nslits + 1):
+      if i < 10:
+	out = cutdir + '/' + cluster.replace(' ', '_') + '_' + mask + '_0' + str(i) + prefix[0]
+	delete(out + '.fits')
+	iraf.imcopy(filename + '[sci,' + str(i) + ']', out, verbose = 'no')
+      else:
+	out = cutdir + '/' + cluster.replace(' ', '_') + '_' + mask + '_' + str(i) + prefix[0]
+	delete(out + '.fits')
+	iraf.imcopy(filename + '[sci,' + str(i) + ']', out, verbose = 'no')
+    print '-' * 30
+    return
+
+  def Cut_apertures(self, infile, outroot, Naps, path = '../../spectra'):
+    for i in range(Naps):
+      iraf.scopy(infile + '[sci,1]', outroot + str(i), aperture = i)
+    return
+
+  def MakeBias(self, files = [], date = '', logfile = 'bias.log'):
+    """
+    The date should be in format "YYYY-MM-DD"
+    """
+    for argv in sys.argv:
+      if argv[0:9] == 'biasdate=':
+	date = argv[9:]
+      if argv[0:9] == 'biasfile=':
+	return argv[9:]
+    if date:
+      date2 = date.split('-')
+      date2 = date2[0] + date2[1] + date2[2]
+    if not files:
+      if date:
+	ls = glob.glob('*%s*.fits' %date2)
+      else:
+	ls = glob.glob('*.fits')
+      for file in ls:
+	head = pyfits.getheader(file)
+	try:
+	  if head['OBJECT'] == 'Bias' and head['OBSTYPE'] == 'BIAS':
+	    files.append(file)
+	except KeyError:
+	  pass
+    print date
+    if len(files) == 0:
+      print 'No bias files from the selected date. Exiting'
+      exit()
+    output = 'bias'
+    biaslist = 'biaslist'
+    if date:
+      biaslist += '_' + date2
+      output   += '_' + date2
+    outlist = open(biaslist, 'w')
+    for bias in files:
+      print >>outlist, bias
+    gmos.gbias('@' + biaslist, output, logfile = logfile, verbose = 'no')
+    return output
+  
+#-------------------------------------------------------------------------------------------------------------#
+def getWavelengths(assocfile):
+  file = open(assocfile)
+  head = file.readline().split()
+  wavecol = head.index('Wave')
+  waves = []
+  for line in file:
+    line = line.split()
+    w = int(line[wavecol])
+    if not w in waves:
+      waves.append(w)
+  return waves
+
+def Copy_MDF(science, mdfdir, cluster, mask):
+  head = pyfits.open(science + '.fits')[0].header
+  mdffile = head['MASKNAME']
+  targetdir = cluster.replace(' ', '_') + '/mask' + mask + '/'
+  os.system('ln -s ' + mdfdir + mdffile + '.fits ' + targetdir)
+  return
+
+def RemovePreviousFiles(name, filetype = ''): # Mainly for the flat files
+  delete('g' + name + '.fits')
+  delete('gs' + name + '.fits')
+  if filetype == 'flat':
+    delete(name + '_flat.fits')
+    delete(name + '_comb.fits')
+  return
+
+def getFile(assoc, mask = 1, obs = 'science', wave = 670):
+  assocfile = open(assoc)
+  assocfile.readline()
+  for line in assocfile:
+    line = line.split()
+    if mask == 'longslit':
+      if int(line[2]) == wave:
+	if obs == 'science':
+	  return line[4]
+	if obs == 'flat':
+	  return line[5]
+	if obs == 'arc' or obs == 'lamp':
+	  return line[6]
+	else:
+	  print 'Unknown observation type in getFile(). Exiting'
+	  exit()
+    else:
+      if int(line[1]) == mask and int(line[2]) == wave:
+	if obs == 'science':
+	  return line[4]
+	if obs == 'flat':
+	  return line[5]
+	if obs == 'arc' or obs == 'lamp':
+	  return line[6]
+	else:
+	  print 'Unknown observation type in getFile(). Exiting'
+	  exit()
+  return ''
+
+def getNslits(filename):
+  f = pyfits.open(filename + '.fits')
+  N =  len(f) - 2
+  f.close()
+  return N
+  
+def getNstars(filename):
+  fits = pyfits.open(filename + '.fits')
+  data = fits[1].data
+  N = 0
+  priority = data.field('priority')
+  for slit in priority:
+    if slit == '0':
+      N += 1
+  fits.close()
+  return N
+
+def ReadKey(fitsfile, key):
+  head = getheader(fitsfile + '.fits')
+  try:
+    value = head[key]
+  except KeyError:
+    return
+  return value
+
+def delete(filename):
+  ls = glob.glob(filename)
+  for filename in ls:
+    os.remove(filename)
+  return
+
+def removedir(dirname):
+  try:
+    os.rmdir(dirname)
+  except OSError:
+    try:
+      os.chdir(dirname)
+    except OSError: # Means that the folder doesn't exist
+      return
+    os.system('rm *')
+    os.chdir('..')
+    os.rmdir(dirname)
+  return
+
+def makedir(dirname, overwrite = 'yes'):
+  dirs = dirname.split('/')
+  for i in range(len(dirs)):
+    try:
+      os.mkdir(dirs[i])
+    except OSError:
+      if overwrite == 'no':
+	pass
+      else:
+	os.system('rm -r ' + dirs[i])
+	os.mkdir(dirs[i])
+    os.chdir(dirs[i])
+  for i in range(len(dirs)):
+    os.chdir('../')
+  return
+
+tasks = tasks()
+#--------------------------------------------------------------------------------------------------#
+def ReadParameters():
+  inter = 'no'
+  if 'inter+' in sys.argv or 'interactive+':
+    inter = 'yes'
+
+  try:
+    cluster = sys.argv[1].replace('?', ' ')
+  except IndexError:
+    cluster = raw_input('Please introduce the name of the object you will be working with: ')
+  if cluster == '':
+    print 'No object given. Exiting.'
+    exit()
+
+  masks = ['all']
+  mdfdir = './'
+  lacosloc = 'pygmos_extras/lacos_spec.cl'
+  alignloc = 'pygmos_extras/align.cl'
+  coordlist = 'pygmos_extras/CuAr-GMOS.dat'
+  align = ''
+  biasfile = ''
+  cutdir = 'spectra'
+  for argv in sys.argv:
+    if argv[0:7].lower() == 'object=':
+      cluster = argv[7:].replace('?', ' ')
+    if argv[0:7].lower() == 'mdfdir=' and mdfdir != 'gmos$data/':
+      mdfdir = argv[7:]
+    if argv[0:11].lower() == 'lacos-file=':
+      lacosloc = argv[11:]
+    if argv[0:11].lower() == 'align-file=':
+      alignloc = argv[11:]
+    if argv[0:5].lower() == 'mask=':
+      if argv[5:].lower() in ['longslit', 'long']:
+	masks = 'longslit'
+	mdfdir = 'gmos$data/'
+      else:
+	masks = argv[5:].split(',')
+	# eliminate "0" in front of a single-digit number in case it is included.
+	for i in range(len(masks)):
+	  if masks[i][0] == '0':
+	    masks[i] = masks[i][1]
+    if argv[0:10].lower() == 'coordlist=':
+      coordlist = argv[10:]
+    if argv[0:13].lower() == 'align-suffix=':
+      align = '_' + argv[13:]
+    if argv[0:10].lower() == 'bias-file=':
+      biasfile = argv[10:]
+    if argv[0:7].lower() == 'cutdir=':
+      cutdir = argv[7:]
+  if align == '' and not 'align-' in sys.argv:
+    align = '_aligned'
+  
+  if lacosloc[0] != '/':
+    lacosloc = '../../' + lacosloc
+  if alignloc[0] != '/':
+    alignloc = '../../' + alignloc
+  if coordlist[0] != '/':
+    coordlist = '../../' + coordlist
+  if biasfile and biasfile[0] != '/':
+    biasfile = '../../' + biasfile
+  if mdfdir[0] != '/':
+    mdfdir = '../../' + mdfdir
+
+  #print cluster
+  #exit()
+
+  return cluster, inter, mdfdir, lacosloc, align, alignloc, masks, coordlist, biasfile, cutdir
+#--------------------------------------------------------------------------------------------------#
+def intro():
+  print ''
+  print '  ', '-' * 74
+  print '  ', '-' * 74
+  print ''
+  print '\t\t################################################'
+  print '\t\t#                                              #'
+  print '\t\t#                    PyGMOS:                   #'
+  print '\t\t#                                              #'
+  print '\t\t#  PyRAF-GMOS reduction pipeline developed by  #'
+  print '\t\t#                Cristóbal Sifón               #'
+  print '\t\t#      at P. Universidad Católica de Chile     #'
+  print '\t\t# -------------------------------------------- #'
+  print '\t\t#                 January, 2011                #'
+  print '\t\t#                                              #'
+  print '\t\t################################################'
+  print ''
+  print '  ', '-' * 74
+  print '  ', '-' * 74
+  print ''
+#--------------------------------------------------------------------------------------------------#
+
+main()

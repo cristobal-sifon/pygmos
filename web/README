@@ -1,0 +1,96 @@
+######################################################################
+#                                                                    #
+#                               PyGMOS:                              #
+#                                                                    #
+#             PyRAF-GMOS reduction pipeline developed by             #
+#                           Cristóbal Sifón                          #
+#                 at P. Universidad Católica de Chile                #
+#                                ----                                #
+#                        cjsifon@astro.puc.cl                        #
+# ------------------------------------------------------------------ #
+#                            January, 2011                           #
+#                                                                    #
+######################################################################
+
+
+****  This program is still under development
+****  If you have any questions or suggestions, please contact me.
+
+URL: http://www.astro.puc.cl/~cjsifon/pygmos/
+
+----------------------------------------------------------------------
+
+****  No installation needed. Just untar pygmos to a directory
+      included in your python path:
+	$tar -xvzf pygmos.tgz
+****  Contains:
+	pygmos:		the code itself
+	pygmos_extras/:	a set of auxiliary functions used by pygmos
+	README:		this file
+****  To run:
+	./pygmos <object> [options]
+****  To display help page:
+	./pygmos --help
+****  Python requirements:
+	numpy, http://numpy.scipy.org/
+	PyFITS, http://www.stsci.edu/resources/software_hardware/pyfits
+	PyRAF, http://www.stsci.edu/resources/software_hardware/pyraf
+
+----------------------------------------------------------------------
+How it works:
+
+The pipeline takes the object name given in the command line and finds
+all data associated with that object. It bias-subtracts all images and
+calibrates the science image with the flat field. It then does the
+wavelength calibration, removes cosmic rays using L.A.Cosmic (van
+Dokkum, 2001, PASP, 113, 1420) and sky subtracts the spectra. After
+this, the individual exposures are added. Finally, the 1d spectra are
+extracted.
+----------------------------------------------------------------------
+Data format taken by pygmos:
+
+-Usual GMOS FITS files, which means two exposures per object, each of
+ which is composed of a science image, a flat field and a calibration
+ arc.
+----------------------------------------------------------------------
+When running the pipeline, keep in mind that:
+
+-The pipeline provided here is intended for large data sets as it
+ automatically runs through the standard spectral reduction process
+ with good results, but reducing the spectra manually might yield a
+ better result (e.g. in sky subtraction).
+-As of now, the pipeline reduces both MOS and longslit GMOS spectra
+ but flux calibration is not implemented.
+-Keep in mind that, being an automated process, some things could go
+ wrong. Most task parameters have to be modified by digging into the
+ code, although some of the most important are easy to find, as they
+ are in the definition of the functions. Others can be easily added
+ in the usual IRAF way.
+-This code has only been tested (and is recommended) for redshift
+ measurements.
+----------------------------------------------------------------------
+Features:
+-Automatic identification of all relevant files given the object name.
+-Incorporates the Lagrangian Cosmic Ray Removal "L.A.Cosmic" code
+ implemented by P. van Dokkum.
+-Can be executed either in automatic or interactive mode, which allows
+ for a more thorough analysis, without the need to run each PyRAF task
+ separately.
+-Has the option of automatically cutting the spectra and copying them
+ to a separate folder. This is useful if, for instance, the spectra
+ will be cross-correlated using RVSAO, which takes only single spectra
+ (as opposed to multi-slit images) as input.
+-Has the option of aligning the 2d images, which is particularly
+ useful for visualizing galaxy cluster data.
+----------------------------------------------------------------------
+Current specific limitations:
+
+-Flux calibration is not implemented.
+-There is no automated search for the bias file(s). The (master)
+ bias file needs to be given in the command (see help page). If not
+ given, the pipeline will ask for one.
+-When run automatically, the pipeline only extracts one aperture from
+ each slit, while some slits might contain more than one object.
+-The interactive feature runs all tasks interactively, without being
+ able to switch individual tasks as automatic and others as
+ interactive. 

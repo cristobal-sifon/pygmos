@@ -1,0 +1,171 @@
+# Default configuration file for PyGMOS
+# Cristóbal Sifón A., 2012 June 13
+#
+
+@gdisplay
+---------
+fl_imexam     =  no                                             # If possible, run imexam
+signal        =  INDEF                                          # Flag pixels with signal above this limit
+sci_ext       =  all                                            # Name of extension(s) to display
+verbose       =  no                                             # Verbose
+
+@gsflat
+-------
+fl_slitcorr   =  no                                             # Correct output for Illumination/Slit-Function
+slitfunc      =                                                 # Slit Function (MEF output of gsslitfunc)
+fl_keep       =  yes                                            # Keep imcombined flat?
+fl_over       =  no                                             # Subtract overscan level
+fl_trim       =  yes                                            # Trim off overscan region
+fl_bias       =  yes                                            # Subtract bias image
+fl_dark       =  no                                             # Subtract (scaled) dark image
+fl_fixpix     =  yes                                            # Interpolate across chip gaps
+fl_vardq      =  yes                                            # Create variance and data quality frames
+bias          =                                                 # Bias image
+mdfdir        =  ./                                             # MDF database directory
+bpm           =                                                 # Name of bad pixel mask file or image
+xoffset       =  INDEF                                          # X offset in wavelength [nm]
+yoffset       =  INDEF                                          # Y offset in unbinned pixels
+fl_usegrad    =  yes                                            # Use gradient method to find MOS slits
+fl_inter      =  no                                             # Fit response interactively?
+fl_answer     =  yes                                            # Continue interactive fitting?
+fl_detec      =  yes                                            # Fit response detector by detector rather than slit by slit?
+function      =  spline3                                        # Fitting function for response
+order         =  15                                             # Order of fitting function, minimum value=1
+low_reject    =  3.                                             # Low rejection in sigma of response fit
+high_reject   =  3.                                             # High rejection in sigma of response fit
+niterate      =  2                                              # Number of rejection iterations in response fit
+logfile       =  gsflat.log                                     # Logfile name
+verbose       =  yes                                            # Verbose
+
+@gmosaic
+--------
+outpref       =  m                                              # Prefix for output images
+fl_paste      =  no                                             # Paste images instead of mosaic
+fl_fixpix     =  yes                                            # Interpolate across chip gaps
+geointer      =  linear                                         # Interpolant to use with geotran
+logfile       =  gmosaic.log                                    # Logfile
+verbose       =  yes                                            # Verbose
+
+@gsreduce
+---------
+outpref       =  gs                                             # Prefix for output images
+fl_over       =  no                                            # Subtract overscan level
+fl_trim       =  yes                                            # Trim off the overscan section
+fl_bias       =  yes                                            # Subtract bias image
+fl_gscrrej    =  no                                             # Clean images for cosmic rays
+fl_dark       =  no                                             # Subtract (scaled) dark image
+fl_flat       =  yes                                            # Apply flat field correction
+fl_vardq      =  yes                                            # Create variance and data quality frames
+bias          =                                                 # Bias image name
+dark          =                                                 # Dark image name
+mdfdir        =  ./                                             # MDF database directory
+fl_inter      =  no                                             # Interactive cosmic ray cleaning fitting
+bpm           =                                                 # Bad Pixel Mask filename
+xoffset       =  INDEF                                          # X offset in wavelength [nm]
+yoffset       =  INDEF                                          # Y offset in unbinned pixels
+ovs_flinter   =  no                                             # Interactive overscan fitting
+ovs_med       =  no                                             # Use median instead of average in column bias
+ovs_func      =  chebyshev                                      # Overscan fitting function
+ovs_order     =  1                                              # Order of overscan fitting function
+ovs_lowr      =  3.                                             # Low sigma rejection factor
+ovs_highr     =  3.                                             # High sigma rejection factor
+ovs_niter     =  2                                              # Number of rejection iterations
+nbiascontam   =  default                                        # Number of columns removed from overscan region
+biasrows      =  default                                        # Rows to use for overscan region
+logfile       =  gsreduce.log                                   # Logfile
+verbose       =  yes                                            # Verbose output?
+
+@lacos_spec
+-----------
+xorder        =  9                                              # order of object fit (0=no fit)
+yorder        =  3                                              # order of sky line fit (0=no fit)
+sigclip       =  4.5                                            # detection limit for cosmic rays (sigma)
+sigfrac       =  0.5                                            # fractional detection limit for neighbouring pixels
+objlim        =  1                                              # contrast limit between CR and underlying object
+niter         =  4                                              # maximum number of iterations
+verbose       =  no
+
+@gswavelength
+-------------
+coordlist     =  CuAr_GMOS.dat                                  # User coordinate list, line list. PROVIDE FULL PATH
+fl_inter      =  no                                             # Examine identifications interactively
+function      =  chebyshev                                      # Coordinate fitting function
+order         =  4                                              # Order of coordinate fitting function
+fl_overwrite  =  yes                                            # Overwrite existing database entries?
+fl_gsappwave  =  no                                             # Run GSAPPWAVE on all images?
+fitcfunc      =  chebyshev                                      # Function for fitting coordinates
+fitcxord      =  4                                              # Order of fitting function in X-axis
+fitcyord      =  4                                              # Order of fitting function in Y-axis
+logfile       =  gswavelength.log                               # Logfile
+verbose       =  yes                                            # Verbose output?
+
+@gstransform
+------------
+outprefix     =  t                                              # Prefix for output spectra
+fl_wavtran    =  yes                                            # Apply wavelength calibration from arc spectrum
+interptype    =  linear                                         # Interpolation type for transform
+lambdalog     =  no                                             # Logarithmic wavelength coordinate for transform
+ylog          =  no                                             # Logarithmic y coordinate for transform
+fl_flux       =  yes                                            # Conserve flux per pixel in the transform
+logfile       =  gstransform.log                                # Logfile
+verbose       =  yes                                            # Verbose
+
+@gsskysub
+---------
+fl_answer     =  no                                             # Continue with interactive fitting
+outpref       =  s                                              # Output prefix
+long_sample   =  *                                              # Sky sample for LONGSLIT
+mos_sample    =  0.9                                            # MOS: Maximum fraction of slit length to use as sky sample
+mosobjsize    =  1.                                             # MOS: Size of object aperture in arcsec
+naverage      =  1                                              # Number of points in sample averaging
+function      =  chebyshev                                      # Function to fit
+order         =  1                                              # Order for fit
+low_reject    =  2.5                                            # Low rejection in sigma of fit
+high_reject   =  2.5                                            # High rejection in sigma of fit
+niterate      =  2                                              # Number of rejection iterations
+grow          =  0.                                             # Rejection growing radius in pixels
+fl_inter      =  no                                             # Fit interactively
+logfile       =  gsskysub.log                                   # Logfile name
+verbose       =  yes                                            # Verbose?
+                
+@gsextract
+----------
+outprefix     =  e                                              # Output prefix
+apwidth       =  1.                                             # Extraction aperture in arcsec (diameter)
+fl_inter      =  no                                             # Run interactively?
+tfunction     =  chebyshev                                      # Trace fitting function
+torder        =  5                                              # Trace fitting function order
+tnsum         =  20                                             # Number of dispersion lines to sum for trace
+tstep         =  50                                             # Tracing 
+lsigma        =  3.                                             # Lower rejection threshold for cleaning
+usigma        =  3.                                             # Upper rejection threshold for cleaning
+mos_bsample   =  0.9                                            # MOS: fraction of slit length to use (bkg+obj)
+bnaverage     =  1                                              # Number of samples to average over
+bniterate     =  2                                              # Number of rejection iterations
+blow_reject   =  2.5                                            # Background lower rejection sigma
+bhigh_reject  =  2.5                                            # Background upper rejection sigma
+logfile       =  gsextract.log                                  # Logfile
+verbose       =  yes                                            # Verbose?
+
+@imcombine
+----------
+logfile       =  imcombine.log                                  # Log file
+combine       =  average                                        # Type of combine operation
+reject        =  none                                           # Type of rejection
+outlimits     =                                                 # Output limits (x1 x2 y1 y2 ...)
+offsets       =  wcs                                            # Input image offsets
+blank         =  0.                                             # Value if there are no pixels
+statsec       =                                                 # Image section for computing statistics
+expname       =  EXPTIME                                        # Image header exposure time keyword
+lthreshold    =  INDEF                                          # Lower threshold
+hthreshold    =  INDEF                                          # Upper threshold
+nlow          =  1                                              # minmax: Number of low pixels to reject
+nhigh         =  1                                              # minmax: Number of high pixels to reject
+nkeep         =  1                                              # Minimum to keep (pos) or maximum to reject (neg)
+mclip         =  yes                                            # Use median in sigma clipping algorithms?
+lsigma        =  3.                                             # Lower sigma clipping factor
+hsigma        =  3.                                             # Upper sigma clipping factor
+snoise        =  0.                                             # ccdclip: Sensitivity noise (fraction)
+sigscale      =  0.1                                            # Tolerance for sigma clipping scaling corrections
+pclip         =  -0.5                                           # pclip: Percentile clipping parameter
+grow          =  0.                                             # Radius (pixels) for neighbor rejection

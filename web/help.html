@@ -1,0 +1,128 @@
+<html>
+<head>
+  <meta name="AUTHOR" content="Crist&oacute;bal Sif&oacute;n Andalaft">
+  <title>pygmos help page</title>
+</head>
+
+<body style="color:rgb(0,0,0);background-color:#FFFFFF;margin-left:25pt" alink="#ff0000" link="#0000ee" vlink="#551a8b">
+  <br>
+  <code style="margin-left:10pt"><big><big><big><big><big><strong>pygmos:
+  help page</strong></big></big></big></big></big></code><br><br>
+
+
+ <br>
+ Usage:<br>
+ <p style="margin-left:25pt">1) Untar the file in any directory (e.g., ~/pygmos/), then add this directory to your
+          path by including, in your HOME$/.bashrc (or .tcshrc, etc.):<br><br>
+            <font style="margin-left:35pt"><code>export PATH=$PATH:$HOME/pygmos</code></font><br><br>
+          <font style="margin-left:20pt">or</font><br><br>
+            <font style="margin-left:35pt"><code>setenv PATH=$PATH:$HOME/pygmos</code></font><br><br>
+          depending on your preferred environment.
+ <p style="margin-left:25pt">2) Type<br><br>
+          <font style="margin-left:20pt"><code>pygmos [object=]&lt;object_name> [-p parameters_file] [ds9-] [cut-] [align+]</font><br>
+          <font style="margin-left:35pt">[mask=&lt;mask_number(s)>] [program=&lt;program_name>]</font></code></p>
+ <p style="margin-left:25pt">3) <code>IRAF</code> task parameters are set using the parameter file provided with
+          <code>PyGMOS</code> (see below), which should be modified (parameters can be added following the given
+          format) to fit the needs of the dataset to be reduced.</p>
+          
+
+  <br>
+  Command-line parameters:
+  <dl style="width:500pt;margin-left:25pt;text-align:justify">
+    <dt><code><strong>object</strong> (Mandatory)</code>
+      <dd>The name of the object, as defined by the header keyword <code>OBJECT</code>. If the
+          name in the <code>OBJECT</code> keyword contains spaces, these should be replaced by
+          a "<code>?</code>" in the command line.
+
+    <dt><code><strong>mask</strong> (Optional)</code>
+      <dd><code>Default: "all"</code><br>
+          Mask number(s) to be processed, as defined by the number after the "<code>-</code>" of
+          the header keyword <code>MASKNAME</code>, or equivalently as listed in the
+          <code>&lt;object&gt;.assoc</code> file written by <code>inventory.py</code>. Receives
+          mask numbers separated by a comma (no spaces) or the strings "<code>all</code>" (which
+          means that all MOS masks for the given object will be processed) and "<code>longslit</code>"
+          (used for longslit spectra).
+
+    <dt><code><strong>program</strong> (Optional)</code>
+      <dd><code>Default: ""</code><br>
+          If there are data for the same object in different Gemini programs (header keyword
+          <code>GEMPRGID</code>), this is used to specify data from which program should be
+          reduced.
+
+    <dt><code><strong>align-suffix</strong> (Optional)</code>
+      <dd><code>Default: "aligned"</code><br>
+          Suffix for gstransformed files
+          after being processed by <code>align.cl</code>. This suffix is removed from files
+          generated further in the reduction process but all this files are still aligned. Need to set
+          <code>align+</code> in the command line.
+
+    <dt><code><strong>cutdir</strong> (Optional)</code>
+      <dd><code>Default: "spectra"</code><br>
+          Directory where the single 1d spectra should be placed, if <code>cut-</code> is not
+	  set. The directory is created automatically by the pipeline. Previously cut spectra (in
+	  the same directory) are overwritten.
+  </dl>
+
+  Optional tasks (should be called with lower case font):
+  <dl style="width:500pt;margin-left:25pt;text-align:justify">
+    <dt><code><strong>ds9</strong></code>
+      <dd><code>Default: enabled</code><br>
+          <code>PyGMOS</code> will by default open a <code>DS9</code> window when it starts and will
+          display images on-the-fly as they are produced by the pipeline. Both the <code>DS9</code> 
+          window and the displaying of images can be disabled by setting <code>ds9-</code> in the
+          command-line.
+    <dt><code><strong>cut</strong></code>
+      <dd><code>Default: enabled</code><br>
+          Cut the 1d spectra into separate files. Can be disabled by including <code>cut-</code>
+	  in the command-line.
+    <dt><code><strong>align</strong></code>
+      <dd><code>Default: disabled</code><br>
+          Align the wavelength-transformed files. This task should be used for viewing purposes
+	  only and should not expected to be super-accurate. Can be enabled by including
+	  <code>align-</code> in the command-line.
+  </dl>
+
+  Other command-line options:
+  <dl style="width:500pt;margin-left:25pt;text-align:justify">
+    <dt><code>pygmos &lt;object> -i</code>
+        <dd>Only run the inventory for a given object, without actually reducing the data.
+    <dt><code>pygmos -h</code>
+        <dd>Display a short help message.
+    <dt><code>pygmos -d</code>
+        <dd>Dump a parameters file.
+    <dt><code>pygmos -dd</code>
+        <dd>Dump an extended parameters file.
+    <dt><code>pygmos -l</code>
+        <dd>Dump a CuAr emission line table file, to be used for the wavelength calibration.
+  </dl>
+
+<br>
+
+Current Limitations:
+<ul style="width:600pt;margin-left:25pt;text-align:justify">
+<li><strong>This pipeline is intended for redshift measurements only.</strong> It provides a first-try
+    reduction of raw data. As such, some masks, slits, or tasks may
+    fail in pathological cases. By far, the <code>IRAF</code> task that fails the most is 
+    <code>gsextract</code>, the 1d spectrum extraction. This may happen on &#126;10&#37; of the slits
+    or less. Also, automatically <code>gsextract</code> extracts only one spectrum per slit, so slits
+    with multiple apertures must be extracted manually.
+<li>A processed bias file has to be provided in the parameter file for <code>gsflat</code> and
+    <code>gsreduce</code>. The pipeline currently does not have the ability to
+    identify the appropriate raw bias files, reduce them and use them.
+</ul>
+
+
+<br>
+<code>pygmos</code> is distributed from this page to be freely used, modified and distributed with the appropriate acknowledgements.
+<br>
+Please keep me updated if you do so by <a href="mailto:cjsifon@astro.puc.cl">writing to me</a>.
+<br>
+<br>
+&copy; Crist&oacute;bal Sif&oacute;n Andalaft
+<br>
+Last Updated July 23, 2012
+<br>
+<a href="../">Home</a>
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+     inimages =                 GMOS images to mosaic
+   (outimages = "")             Output images or list
+     (outpref = "m")            Prefix for output images
+    (fl_paste = no)             Paste images instead of mosaic
+    (fl_vardq = no)             Propagate the variance and data quality planes
+   (fl_fixpix = no)             Interpolate across chip gaps
+    (fl_clean = yes)            Clean imaging data outside imaging field
+    (geointer = "linear")       Interpolant to use with geotran
+         (gap = "default")      Gap between the CCDs in unbinned pixels
+     (bpmfile = "gmos$data/chipgaps.dat") Info on location of chip gaps
+     (statsec = "default")      Statistics section for cleaning
+     (obsmode = "IMAGE")        Value of key_obsmode for imaging data
+     (sci_ext = "SCI")          Science extension(s) to mosaic, use '' for raw data
+     (var_ext = "VAR")          Variance extension(s) to mosaic
+      (dq_ext = "DQ")           Data quality extension(s) to mosaic
+     (mdf_ext = "MDF")          Mask definition file extension name
+  (key_detsec = "DETSEC")       Header keyword for detector section
+  (key_ccdsec = "CCDSEC")       Header keyword for CCD section
+  (key_datsec = "DATASEC")      Header keyword for data section
+  (key_ccdsum = "CCDSUM")       Header keyword for CCD binning
+ (key_obsmode = "OBSMODE")      Header keyword for observing mode
+     (logfile = "")             Logfile
+     (fl_real = no)             Convert file to real before transforming
+     (verbose = yes)            Verbose
+      (status = 0)              Exit status (0=good)
+    (scanfile = "")             Internal use only
+        (mode = "al")           
