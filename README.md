@@ -23,23 +23,24 @@ and restarting the console.
 
 ## Contains:
 
-  * Main code
+#### Main code
 
-    pygmos:               -- the code itself
-  * Auxiliary:
-    align.cl              -- align spectra by wavelength
-    check_gswave          -- compares the corrected arc lines with the given ones to estimate dispersion
-    CuAr-GMOS.dat         -- set of CuAr lamp emission lines for wavelength calibration
-    inventory.py          -- identifies the fits files corresponding to each object
-    lacos_spec.cl         -- cosmic ray removal software written by Pieter van Dokkum (distributed with permission)
-    README.md             -- this file
+  * `pygmos`               -- the code itself
+ 
+#### Auxiliary
+  
+  * `align.cl`              -- align spectra by wavelength
+  * `check_gswave`          -- compares the corrected arc lines with the given ones to estimate dispersion
+  * `CuAr-GMOS.dat`         -- set of CuAr lamp emission lines for wavelength calibration
+  * `inventory.py`          -- identifies the fits files corresponding to each object
+  * `lacos_spec.cl`         -- cosmic ray removal software written by Pieter van Dokkum (distributed with permission)
+  * `README.md`             -- this file
 
 ## To run, type:
+
     pygmos <object> [options]
 
-For help, go to:
-
-    http://www.astro.princeton.edu/~sifon/pygmos/help.html
+For further help, go [here](http://www.astro.princeton.edu/~sifon/pygmos/help.html)
 
 ## Python requirements:
     numpy, http://numpy.scipy.org/
