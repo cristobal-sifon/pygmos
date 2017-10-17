@@ -101,7 +101,7 @@ def main():
             inventory.main(program, cluster, gmos.gsreduce.bias)
     if '-i' in sys.argv:
         print()
-        exit()
+        sys.exit()
 
     ReadIRAFParams()
 
@@ -596,7 +596,7 @@ class tasks():
         print(date)
         if len(files) == 0:
             print('No bias files from the selected date. Exiting')
-            exit()
+            sys.exit()
         output = 'bias'
         biaslist = 'biaslist'
         if date:
@@ -625,12 +625,14 @@ def getScienceFiles(assocfile, mask):
     mcol = head.index('Mask')
     science = {}
     for line in file:
-        if line[0] != '#':
-            line = line.split()
-            if len(line) >= 7:
-                if line[mcol] == mask:
-                    science[line[scol]] = int(line[2])
+        if line[0] == '#':
+            continue
+        line = line.split()
+        if len(line) >= 7:
+            if line[mcol] == mask:
+                science[line[scol]] = int(line[2])
     return science
+
 
 def getDarks():
     darks = []
@@ -639,6 +641,7 @@ def getDarks():
         if head['OBSTYPE'] == 'DARK':
             darks.append(ls[:-5])
     return ','.join(darks)
+
 
 def getWavelengths(assocfile):
     file = open(assocfile)
@@ -656,81 +659,90 @@ def getWavelengths(assocfile):
                 waves.append(w)
     return waves
 
+
 def Copy_MDF(science, cluster, mask):
     head = pyfits.open(science + '.fits')[0].header
     mdffile = head['MASKNAME']
     targetdir = cluster.replace(' ', '_') + '/mask' + mask + '/'
     if not os.path.isfile(targetdir):
-        os.system('cp -p ' + mdffile + '.fits ' + targetdir)
+        os.system('cp -p {0}.fits {1}'.format(mdffile, targetdir))
     return
 
-def RemovePreviousFiles(name, filetype=''): # Mainly for the flat files
-    delete('g' + name + '.fits')
-    delete('gs' + name + '.fits')
+
+def RemovePreviousFiles(name, filetype=''):
+    """Mainly for the flat files"""
+    delete('g{0}.fits'.format(name))
+    delete('gs{0}.fits'.format(name))
     if filetype == 'flat':
-        delete(name + '_flat.fits')
-        delete(name + '_comb.fits')
+        delete('{0}_flat.fits'.format(name))
+        delete('{0}_comb.fits'.format(name))
     return
+
 
 def getFile(assoc, science, mask=1, obs='science', wave=670):
-  assocfile = open(assoc)
-  while assocfile.readline()[0] == '#':
-    pass
-  for line in assocfile:
-    if line[0] != '#':
-      line = line.split()
-      if len(line) < 7:
-        continue
-      if mask == 'longslit':
-        if int(line[2]) == wave and line[4] == science:
-          if obs == 'science':
-            return line[4]
-          if obs == 'flat':
-            return line[5]
-          if obs == 'arc' or obs == 'lamp':
-            return line[6]
-          else:
-            print('Unknown observation type in getFile(). Exiting')
-            exit()
-      else:
-        if int(line[1]) == mask and \
-           int(line[2]) == wave and \
-           line[4] == science:
-          if obs == 'science':
-            return line[4]
-          if obs == 'flat':
-            return line[5]
-          if obs == 'arc' or obs == 'lamp':
-            return line[6]
-          else:
-            print('Unknown observation type in getFile(). Exiting')
-            sys.exit()
-  return
+    assocfile = open(assoc)
+    while assocfile.readline()[0] == '#':
+        pass
+    for line in assocfile:
+        if line[0] == '#':
+            continue
+        line = line.split()
+        if len(line) < 7:
+            continue
+        if mask == 'longslit':
+            if int(line[2]) == wave and line[4] == science:
+                if obs == 'science':
+                    return line[4]
+                if obs == 'flat':
+                    return line[5]
+                if obs == 'arc' or obs == 'lamp':
+                    return line[6]
+                else:
+                    print('Unknown observation type in getFile(). Exiting')
+                    sys.exit()
+        else:
+            if int(line[1]) == mask and \
+                    int(line[2]) == wave and \
+                    line[4] == science:
+                if obs == 'science':
+                    return line[4]
+                if obs == 'flat':
+                    return line[5]
+                if obs == 'arc' or obs == 'lamp':
+                    return line[6]
+                else:
+                    print('Unknown observation type in getFile(). Exiting')
+                    sys.exit()
+    return
+
 
 def getNslits(filename):
-  f = pyfits.open(filename + '.fits')
-  N =  len(f) - 2
-  f.close()
-  return N
-  
+    f = pyfits.open('{0}.fits'.format(filename))
+    N =  len(f) - 2
+    f.close()
+    return N
+
+
 def getNstars(filename):
-  fits = pyfits.open(filename + '.fits')
-  data = fits[1].data
-  N = 0
-  priority = data.field('priority')
-  for slit in priority:
-    if slit == '0':
-      N += 1
-  fits.close()
-  return N
+    fits = pyfits.open(filename + '.fits')
+    data = fits[1].data
+    N = 0
+    priority = data.field('priority')
+    for slit in priority:
+        if slit == '0':
+            N += 1
+    fits.close()
+    return N
+
 
 def ReadKey(fitsfile, key):
-  head = getheader(fitsfile + '.fits')
-  try:
-    value = head[key]
-  except KeyError:
-    return
-  return value
+    head = getheader(fitsfile + '.fits')
+    try:
+        value = head[key]
+    except KeyError:
+        return
+    return value
+
 
 def delete(filename):
   ls = glob.glob(filename)
@@ -738,18 +750,20 @@ def delete(filename):
     os.system('rm %s' %filename)
   return
 
+
 def removedir(dirname):
-  try:
-    os.rmdir(dirname)
-  except OSError:
     try:
-      os.chdir(dirname)
-    except OSError: # Means that the folder doesn't exist
-      return
-    os.system('rm *')
-    os.chdir('..')
-    os.rmdir(dirname)
-  return
+        os.rmdir(dirname)
+    except OSError:
+        try:
+            os.chdir(dirname)
+        except OSError: # Means that the folder doesn't exist
+            return
+        os.system('rm *')
+        os.chdir('..')
+        os.rmdir(dirname)
+    return
+
 
 def makedir(dirname, overwrite='yes'):
     dirs = dirname.split('/')
@@ -767,17 +781,18 @@ def makedir(dirname, overwrite='yes'):
         os.chdir('../')
     return
 
+
 def write_offsets(inimages, output):
-  xoffset = []
-  yoffset = []
-  for img in inimages:
-    head = pyfits.getheader(img)
-    xoffset.append(head['XOFFSET'])
-    yoffset.append(head['YOFFSET'])
-  out = open(output, 'w')
-  for i in range(len(xoffset)):
-    print(xoffset[i], '\t', yoffset[i], file=out)
-  return output
+    xoffset = []
+    yoffset = []
+    for img in inimages:
+        head = pyfits.getheader(img)
+        xoffset.append(head['XOFFSET'])
+        yoffset.append(head['YOFFSET'])
+    out = open(output, 'w')
+    for i in range(len(xoffset)):
+        print(xoffset[i], '\t', yoffset[i], file=out)
+    return output
 
 #--------------------------------------------------------------------------#
 #--------------------------------------------------------------------------#
@@ -840,68 +855,67 @@ def ReadParameters():
 
 
 def ReadIRAFParams():
-  """
-  Read parameter definitions from the parameter file
-  """
-  # is a parameter filename specified? If not, use default filename
-  if '-p' in sys.argv:
-    argv = sys.argv
-    j = argv.index('-p')
-    paramFile = argv[j + 1]
-  else:
-    paramFile = 'pygmos.param'
-  print('Reading parameters from %s\n' %paramFile)
+    """
+    Read parameter definitions from the parameter file
+    """
+    # is a parameter filename specified? If not, use default filename
+    if '-p' in sys.argv:
+        argv = sys.argv
+        j = argv.index('-p')
+        paramFile = argv[j + 1]
+    else:
+        paramFile = 'pygmos.param'
+    print('Reading parameters from {0}\n'.format(paramFile))
 
-  pFile = open(paramFile)
-  for line in pFile:
-    if line[0] == '@':
-      task = line.split()[0][1:]
-      task = getattr(iraf, task)
-    if '=' in line and line[0] != '#':
-      line = line.split()
-      try:
-        if line[2] == '#':
-          task.setParam(line[0], '')
-        else:
-          task.setParam(line[0], line[2])
-      except IndexError:
-        task.setParam(line[0], '')
-  if gmos.gswavelength.coordlist[0] not in ('/','$') and \
-    gmos.gswavelength.coordlist[:2] != '{$' and \
-    gmos.gswavelength.coordlist[:6] != '../../':
-    gmos.gswavelength.coordlist = '../../' + gmos.gswavelength.coordlist
+    pFile = open(paramFile)
+    for line in pFile:
+        if line[0] == '@':
+            task = line.split()[0][1:]
+            task = getattr(iraf, task)
+        if '=' in line and line[0] != '#':
+            line = line.split()
+            try:
+                if line[2] == '#':
+                    task.setParam(line[0], '')
+                else:
+                    task.setParam(line[0], line[2])
+            except IndexError:
+                task.setParam(line[0], '')
+    if gmos.gswavelength.coordlist[0] not in ('/','$') and \
+            gmos.gswavelength.coordlist[:2] != '{$' and \
+            gmos.gswavelength.coordlist[:6] != '../../':
+        gmos.gswavelength.coordlist = '../../' + gmos.gswavelength.coordlist
   return
 
-#--------------------------------------------------------------------------#
+
 def intro():
-  print()
-  print('  ', '-' * 74)
-  print('  ', '-' * 74)
-  print()
-  print('\t\t################################################')
-  print('\t\t#                                              #')
-  print('\t\t#                    PyGMOS:                   #')
-  print('\t\t#                                              #')
-  print('\t\t#  PyRAF-GMOS reduction pipeline developed by  #')
-  print('\t\t#                Cristóbal Sifón               #')
-  print('\t\t#      at P. Universidad Católica de Chile     #')
-  print('\t\t#                                              #')
-  print('\t\t#               current address:               #')
-  print('\t\t#        Leiden Observatory, Leiden, NL        #')
-  print('\t\t#           sifon@strw.leidenuniv.nl           #')
-  print('\t\t# -------------------------------------------- #')
-  print('\t\t#                 January, 2011                #')
-  print('\t\t#            Last Updated April, 2013          #')
-  print('\t\t#                                              #')
-  print('\t\t################################################')
-  print()
-  print('  ', '-' * 74)
-  print('  ', '-' * 74)
-  print()
-  return
-#--------------------------------------------------------------------------------------------------#
+    print()
+    print('  ', '-' * 74)
+    print('  ', '-' * 74)
+    print()
+    print('\t\t################################################')
+    print('\t\t#                                              #')
+    print('\t\t#                    PyGMOS:                   #')
+    print('\t\t#                                              #')
+    print('\t\t#  PyRAF-GMOS reduction pipeline developed by  #')
+    print('\t\t#                Cristóbal Sifón               #')
+    print('\t\t#                                              #')
+    print('\t\t#               current address:               #')
+    print('\t\t#     Princeton University, Princeton, USA     #')
+    print('\t\t#           sifon@astro.princeton.edu          #')
+    print('\t\t# -------------------------------------------- #')
+    print('\t\t#                 January, 2011                #')
+    print('\t\t#           Last Updated October, 2017         #')
+    print('\t\t#                                              #')
+    print('\t\t################################################')
+    print()
+    print('  ', '-' * 74)
+    print('  ', '-' * 74)
+    print()
+    return
+
 
 if __name__ == '__main__':
-  t0 = time.time()
-  main()
-  print('\nTotal execution time %.1f min' %((time.time() - t0) / 60))
+    t0 = time.time()
+    main()
+    print('\nTotal execution time {0:.1f} min'.format(((time.time() - t0) / 60)))
