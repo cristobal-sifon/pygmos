@@ -1,3 +1,0 @@
-taken from http://www.astrobetter.com/wiki/tiki-index.php?page=Nod+and+Shuffle
-
-1) gnsdark @dark.lis dark.fits fl_over+ fl_trim+
