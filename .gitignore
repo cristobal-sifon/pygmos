@@ -1,6 +1,8 @@
 *~
 *.log
 *.pyc
+build
+dist
 misc
-pygmos_20120809*
+pygmos.egg*
 web
