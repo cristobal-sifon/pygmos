@@ -11,10 +11,10 @@ except ImportError:
     import pyfits
 import sys
 import time
-#from pyraf import iraf
-#from iraf import gemini
-#from iraf import gemtools
-#from iraf import gmos
+from pyraf import iraf
+from iraf import gemini
+from iraf import gemtools
+from iraf import gmos
 
 """
 PyGMOS
@@ -24,7 +24,6 @@ PyGMOS
 from pygmos import check_gswave
 from pygmos import inventory
 
-sys.exit()
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
