@@ -1,0 +1,10 @@
+README.md
+setup.py
+bin/pygmos
+pygmos/__init__.py
+pygmos/check_gswave.py
+pygmos/inventory.py
+pygmos.egg-info/PKG-INFO
+pygmos.egg-info/SOURCES.txt
+pygmos.egg-info/dependency_links.txt
+pygmos.egg-info/top_level.txt
