@@ -1,25 +1,30 @@
 # `PyGMOS`
 An automated `PyRAF` data reduction pipeline for `GMOS` spectroscopic data
 
----
-
-_**Disclaimer:** this program should work with fairly little setup but was under development at the time
-when I stopped working on it (ca. 2012). I can offer some support but do not intend to spend significant
-amounts of time developing this code further in the near future._
-  
-----
 
 ## Installation
 
-Just untar pygmos to a directory included in your path:
+Download the latest (stable) version from this repository. Then run:
 
-    tar -xvzf pygmos.tar.gz
+    python setup.py install [--user]
 
-Or, you can add the directory to your path by adding the following to your `~/.bashrc` (or equivalent) file:
+where the `--user` flag is recommended so as not to install as root. To check whether the `pygmos` executable is in your `PATH`, type
 
-    export PATH=$PATH:<any_directory>
+    which pygmos
 
-and restarting the console.
+If you see nothing (or a 'not found' message), it means the location of the executable is not part of your `PATH`. If this is the case, look through the installation messages for the place where the executable was copied to. In my case:
+
+    Installing pygmos script to /u/sifon/.local/bin
+
+You should therefore add the equivalent of `/u/sifon/.local/bin` to your `PATH`. Add the following line to your `~/.bashrc` or `~/.bash_profile`:
+
+    export PATH=/u/sifon/.local/bin:$PATH
+
+or to the `~/.cshrc`, etc, if you're not using `bash`:
+
+    setenv PATH /u/sifon/.local/bin:$PATH
+
+and restart the console.
 
 ## Contains:
 
@@ -46,6 +51,8 @@ For further help, go [here](http://www.astro.princeton.edu/~sifon/pygmos/help.ht
     numpy, http://numpy.scipy.org/
     PyFITS, http://www.stsci.edu/resources/software_hardware/pyfits
     PyRAF, http://www.stsci.edu/resources/software_hardware/pyraf
+
+All of these are best installed through [Astroconda](http://astroconda.readthedocs.io/en/latest/).
 
 ----
 
