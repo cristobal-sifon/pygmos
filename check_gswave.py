@@ -150,7 +150,7 @@ def getNslits(filename):
     return N
 
 
-def ManualCheck(lines, pr=False):
+def ManualCheck(lines, verbose=False):
     """Change `pr` for `verbose`"""
     f = open('CuAr_GMOS-ACT.dat')
     skylines = []
@@ -170,8 +170,8 @@ def ManualCheck(lines, pr=False):
     med = numpy.median(diff)
     std = numpy.std(diff)
     rms = std * numpy.sqrt(len(diff))
-    if pr:
-        print diff
+    if verbose:
+        print(diff)
     print('med = {0:.2f};\tstd = {1:.2f};\trms = {2:.2f} ({3} lines)'.format(
             med, std, rms, len(lines)))
     return med, std, rms
