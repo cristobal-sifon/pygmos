@@ -11,18 +11,17 @@ except ImportError:
     import pyfits
 import sys
 import time
-from pyraf import iraf
-from iraf import gemini
-from iraf import gemtools
-from iraf import gmos
+#from pyraf import iraf
+#from iraf import gemini
+#from iraf import gemtools
+#from iraf import gmos
 
 """
 PyGMOS
 """
 
 # Other packages provided with the code:
-from pygmos import check_gswave
-from pygmos import inventory
+from pygmos import check_gswave, inventory, paramtools
 
 
 # complementary files will be located in the pygmos folder so need to
@@ -30,33 +29,8 @@ from pygmos import inventory
 pygmos_path = inventory.__file__.replace('inventory.pyc', '')
 os.environ['pygmos_path'] = pygmos_path
 
-# help file and others
-if '-h' in sys.argv or '--help' in sys.argv:
-    filename = os.path.join(pygmos_path, 'pygmos.hlp')
-    if not os.path.isfile(filename):
-        pygmos_path = '/'.join(pygmos_path.split('/')[:-1])
-    filename = os.path.join(pygmos_path, 'pygmos.hlp')
-    f = open(filename)
-    for l in f:
-        print(l.replace('\n', ''))
-    sys.exit()
-if '-l' in sys.argv:
-    os.system('cp %s .' %os.path.join(pygmos_path, 'CuAr_GMOS.dat'))
-    print('Copied CuAr line list (CuAr_GMOS.dat) to current directory.')
-    sys.exit()
-if '-dd' in sys.argv or '-e' in sys.argv:
-    f = open(os.path.join(pygmos_path, 'pygmos.params.extended'))
-    for l in f:
-        print(l.replace('\n', ''))
-    sys.exit()
-if '-d' in sys.argv:
-    f = open(os.path.join(pygmos_path, 'pygmos.params'))
-    for l in f:
-        print(l.replace('\n', ''))
-    sys.exit()
-
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
-iraf.task(lacos_spec=os.path.join(pygmos_path,'lacos_spec.cl'))
+#iraf.task(lacos_spec=os.path.join(pygmos_path,'lacos_spec.cl'))
 
 
 def main():
@@ -67,27 +41,30 @@ def main():
 
     """
     #cluster, align, align_suffix, masks, cutdir, program = ReadParameters()
-    args = readparams.read_args()
+    args = paramtools.read_args()
 
-    cluster = cluster.replace(' ', '_')
     # Default value if nothing was specified in the console
     if masks == ['all']:
-        if '-r' in sys.argv:
+        if args.read_inventory:
             masks = sorted(inventory.read(cluster, gmos.gsreduce.bias))
         else:
-            masks = sorted(inventory.main('', cluster, gmos.gsreduce.bias))
+            masks = sorted(inventory.generate(
+                '', cluster, gmos.gsreduce.bias))
         masks = [str(m) for m in masks]
     elif masks in ('longslit', 'ls', 'long'):
         inventory.main(
             program, cluster, gmos.gsreduce.bias, masktype='longslit')
     else:
-        if '-r' in sys.argv:
+        if args.read_inventory:
             inventory.read(cluster, gmos.gsreduce.bias)
         else:
             inventory.main(program, cluster, gmos.gsreduce.bias)
-    if '-i' in sys.argv:
+    if args.inventory_only:
         print()
-        sys.exit()
+        return
+
+    # moving this along as I update the code
+    return
 
     ReadIRAFParams()
 

@@ -43,10 +43,11 @@ setup(
     long_description=read('README.md'),
     url='https://github.com/cristobal-sifon/pygmos',
     packages=['pygmos'],
-    package_data={'': ['docs/*',
-                       'pygmos/CuAr_GMOS.dat',
-                       'pygmos/*.cl',
-                       'README.md']},
+    package_data={'': ['pygmos/CuAr_GMOS.dat',
+                       'pygmos/*.cl']},
     scripts=['bin/pygmos'],
-    install_requires=[]
+    data_files=[('docs', ['docs/pygmos.hlp',
+                          'docs/pygmos.params',
+                          'docs/pygmos.params.extended',
+                          'README.md'])]
     )

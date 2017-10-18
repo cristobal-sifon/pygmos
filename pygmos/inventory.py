@@ -11,7 +11,7 @@ except ImportError:
     from pyfits import getheader
 
 
-def main(program, cluster, bias, masktype='mos', verbose=True):
+def generate(program, cluster, bias, masktype='mos', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
         print(' Making inventory for object', cluster)
@@ -21,8 +21,8 @@ def main(program, cluster, bias, masktype='mos', verbose=True):
     elif masktype.lower() == 'longslit':
         longslit(cluster, program, bias)
     else:
-        msg = 'Unknown mask type. Enter "mos" (default) or "longslit".' \
-              ' Exiting inventory'
+        msg = 'Unknown mask type. Enter either "mos" (default) or' \
+              ' "longslit". Exiting inventory.\n'
         print(msg)
         sys.exit()
     if verbose:

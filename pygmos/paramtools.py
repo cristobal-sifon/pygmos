@@ -3,10 +3,10 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import sys
-from os.path import join
-from pyraf import iraf
-from iraf import gemini
-from iraf import gmos
+from os.path import abspath, dirname, join, split
+#from pyraf import iraf
+#from iraf import gemini
+#from iraf import gmos
 
 
 def read_args():
@@ -21,6 +21,7 @@ def parse_args():
         description='PyGMOS - A Python/PyRAF data reduction pipeline' \
                     ' for Gemini/GMOS spectroscopic data')
     add = parser.add_argument
+
     # mandatory arguments
     add('objectid',
         help='Object name as given in the FITS file header. If the' \
@@ -32,13 +33,27 @@ def parse_args():
     add('--cut-dir', dest='cutdir', default='spectra',
         help='Directory into which the individual 1d spectra will be saved' \
              ' (if --no-cut has not been set)')
+    add('-i', '--inventory', dest='inventory_only', action='store_true',
+        help='Only run the inventory for a given object, without actually' \
+             ' reducing the data')
     add('-m', '--masks', dest='masks', nargs='*', default=['all'],
         help='Which masks to reduce (identified by their numbers)')
     add('-p', '--param-file', dest='paramfile', default='pygmos.param',
         help='File containing IRAF parameter definitions')
     add('--program', dest='program', default='',
         help='Gemini Program ID')
-    return args
+    add('-r', '--read-inventory', dest='read_inventory', action='store_true',
+        help='Read an already-existing inventory file instead of producing' \
+             ' one')
+
+    # dump files
+    # folder where pygmos is stored
+    pygmos_path = split(abspath(dirname(__file__)))[0]
+    add('-d', dest='dump', nargs='?', default=None,
+        action=dump_file(join(pygmos_path, 'docs/pygmos.params')))
+    add('-dd', dest='dump', nargs='?', default=None,
+        action=dump_file('docs/pygmos.params.extended'))
+    return parser
 
 
 def setup_args(parser):
@@ -68,4 +83,32 @@ def read_iraf_params(args):
         gmos.gswavelength.coordlist = join(
             '..', '..', gmos.gswavelength.coordlist)
     return
+
+
+def dump_file(infile):
+    """
+    Dump contents of file into output provided in the command line.
+
+    Adapted from
+    https://docs.python.org/3/library/argparse.html#action and
+    https://goo.gl/BWfK5Y
+    
+    """
+    class DumpFile(argparse.Action):
+        def __call__(self, parser, args, outfile, option_string=None):
+            if outfile is None:
+                outfile = sys.stdout
+            else:
+                outfile = open(outfile, 'w')
+            with open(infile) as f:
+                print(f.read(), file=outfile)
+            sys.exit()
+    return DumpFile
+
+
+# for testing purposes
+if __name__ == '__main__':
+    read_args()
+
+
 

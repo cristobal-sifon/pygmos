@@ -10,11 +10,11 @@ try:
 except ImportError:
     import pyfits
 import shutil
-from pyraf import iraf
-from iraf import gemini
-from iraf import gmos
-from iraf import images
-from iraf import tv
+#from pyraf import iraf
+#from iraf import gemini
+#from iraf import gmos
+#from iraf import images
+#from iraf import tv
 
 
 def main(cluster, mask, logfile, outfile, thresh=0.25):
