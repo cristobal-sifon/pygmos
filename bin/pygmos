@@ -26,8 +26,10 @@ from pygmos import check_gswave, inventory, paramtools
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
-pygmos_path = inventory.__file__.replace('inventory.pyc', '')
+pygmos_path = os.path.dirname(os.path.split(
+    inventory.__file__.replace('inventory.pyc', ''))[0])
 os.environ['pygmos_path'] = pygmos_path
+print(os.environ['pygmos_path'], end='\n\n\n')
 
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
 #iraf.task(lacos_spec=os.path.join(pygmos_path,'lacos_spec.cl'))
@@ -40,7 +42,6 @@ def main():
     number(s) of the mask(s) wanted.
 
     """
-    #cluster, align, align_suffix, masks, cutdir, program = ReadParameters()
     args = paramtools.read_args()
 
     # Default value if nothing was specified in the console
@@ -63,15 +64,15 @@ def main():
         print()
         return
 
-    # moving this along as I update the code
-    return
-
-    ReadIRAFParams()
+    paramtools.read_iraf_params(args)
 
     # open DS9?
     if 'ds9-' not in sys.argv:
         os.system('ds9 &')
     iraf.set(stdimage='imtgmos') # GMOS display format
+
+    # moving this along as I update the code
+    return
 
     if align:
         iraf.task(align=os.path.join(pygmos_path,'align.cl'))

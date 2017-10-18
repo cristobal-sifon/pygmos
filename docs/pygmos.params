@@ -87,7 +87,7 @@ verbose       =  no
 
 @gswavelength
 -------------
-coordlist     =  CuAr_GMOS.dat                                  # User coordinate list, line list. PROVIDE FULL PATH
+coordlist     =  pygmos$data/CuAr_GMOS.dat                      # User coordinate list, line list
 fl_inter      =  no                                             # Examine identifications interactively
 function      =  chebyshev                                      # Coordinate fitting function
 order         =  4                                              # Order of coordinate fitting function

@@ -3,13 +3,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import sys
+from os import environ
 from os.path import abspath, dirname, join, split
 #from pyraf import iraf
 #from iraf import gemini
 #from iraf import gmos
-
-# folder where pygmos is stored
-pygmos_path = split(abspath(dirname(__file__)))[0]
 
 
 def dump_file(infile):
@@ -46,7 +44,8 @@ def read_iraf_params(args):
                 if len(line) > 2 and line[2] != '#':
                     task.setParam(
                         line[0], line[2].replace(
-                            'pygmos$', '{0}/'.format(pygmos_path)))
+                            'pygmos$',
+                            '{0}/'.format(environ['pygmos_path'])))
                 else:
                     task.setParam(line[0], '')
     return
@@ -82,8 +81,11 @@ def parse_args():
              ' reducing the data')
     add('-m', '--masks', dest='masks', nargs='*', default=['all'],
         help='Which masks to reduce (identified by their numbers)')
+    add('--no-ds9', dest='ds9', action='store_false',
+        help='Do not start a ds9 session to display files as they are' \
+             ' created')
     add('-p', '--param-file', dest='paramfile',
-        default=join(pygmos_path, 'pygmos.param'),
+        default=join(environ['pygmos_path'], 'pygmos.param'),
         help='File containing IRAF parameter definitions')
     add('--program', dest='program', default='',
         help='Gemini Program ID')
@@ -93,9 +95,12 @@ def parse_args():
 
     # dump files
     add('-d', dest='dump', nargs='?', default=None,
-        action=dump_file(join(pygmos_path, 'docs/pygmos.params')))
+        action=dump_file(join(environ['pygmos_path'], 'docs',
+                              'pygmos.params')))
     add('-dd', dest='dump', nargs='?', default=None,
-        action=dump_file('docs/pygmos.params.extended'))
+        action=dump_file(join(environ['pygmos_path'],
+                              'docs', 'pygmos.params.extended')))
+
     return parser
 
 
