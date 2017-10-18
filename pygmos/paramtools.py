@@ -28,7 +28,7 @@ def dump_file(infile):
             else:
                 outfile = open(outfile, 'w')
             with open(infile) as f:
-                print(f.read(), file=outfile)
+                print(f.read(), file=outfile, end='')
             sys.exit()
     return DumpFile
 
