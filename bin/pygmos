@@ -66,7 +66,8 @@ def main():
     number(s) of the mask(s) wanted.
 
     """
-    cluster, align, align_suffix, masks, cutdir, program = ReadParameters()
+    #cluster, align, align_suffix, masks, cutdir, program = ReadParameters()
+    args = readparams.read_args()
 
     cluster = cluster.replace(' ', '_')
     # Default value if nothing was specified in the console
@@ -778,114 +779,6 @@ def write_offsets(inimages, output):
     for i in range(len(xoffset)):
         print(xoffset[i], '\t', yoffset[i], file=out)
     return output
-
-#--------------------------------------------------------------------------#
-#--------------------------------------------------------------------------#
-#--                                                                      --#
-#--              The tasks below are used to read parameters             --#
-#--             from the parameter file and the command line             --#
-#--                                                                      --#
-#--------------------------------------------------------------------------#
-#--------------------------------------------------------------------------#
-
-def default_params():
-    """
-    Default parameters. Modify these if your usual setup is different. All these
-    can also be modified from the command line.
-    """
-    align = False # make wavelength-aligned masks?
-    cut = True # cut the spectra into single fits files?
-    program = '' # only need to define it if there are files from more than
-                # one GMOS program in the same folder
-                # and you only want to reduce data from one of them
-    # better not to modify within this file:
-    masks = ['all']
-    return align, cut, masks, program
-
-
-def ReadParameters():
-    align, cut, masks, program = default_params()
-
-    if 'align+' in sys.argv:
-        align = True
-    elif 'align-' in sys.argv:
-        align = False
-    if 'cut+' in sys.argv:
-        cut = True
-    elif 'cut-' in sys.argv:
-        cut = False
-
-    # is the object defined without the "object=" prefix?
-    if len(sys.argv) == 1:
-        msg = 'Please introduce the name of the object you will be working with: '
-        cluster = raw_input(msg)
-    if (len(sys.argv) == 2 or '=' not in sys.argv[1]) and sys.argv[1][0] != '-':
-        cluster = sys.argv[1].replace('?', ' ')
-    else:
-        for i in range(2, len(sys.argv)):
-            if sys.argv[i][0] != '-' and '=' not in sys.argv[i]:
-                cluster = sys.argv[i].replace('?', ' ')
-                break
-
-    align_suffix = ''
-    cutdir = 'spectra'
-    for argv in sys.argv:
-        if argv[0:7].lower() == 'object=':
-            cluster = argv[7:].replace('?', ' ')
-        # the latter is the case for longslit observations
-        if argv[0:5].lower() == 'mask=':
-            if argv[5:].lower() in ['longslit', 'long', 'ls']:
-                masks = 'longslit'
-            else:
-                masks = argv[5:].split(',')
-                # eliminate all zeros in front of numbers if included.
-                for i in range(len(masks)):
-                    while masks[i][0] == '0':
-                        masks[i] = masks[i][1:]
-        if argv[0:13].lower() == 'align-suffix=':
-            align = '_' + argv[13:]
-        if argv[0:7].lower() == 'cutdir=':
-            cutdir = argv[7:]
-        if argv[0:8].lower() == 'program=':
-            program = argv[8:]
-    if align_suffix == '' and not 'align-' in sys.argv:
-        align_suffix = '_aligned'
-
-    return cluster, align, align_suffix, masks, cutdir, program
-
-
-def ReadIRAFParams():
-    """
-    Read parameter definitions from the parameter file
-    """
-    # is a parameter filename specified? If not, use default filename
-    if '-p' in sys.argv:
-        argv = sys.argv
-        j = argv.index('-p')
-        paramFile = argv[j + 1]
-    else:
-        paramFile = 'pygmos.param'
-    print('Reading parameters from {0}\n'.format(paramFile))
-
-    pFile = open(paramFile)
-    for line in pFile:
-        if line[0] == '@':
-            task = line.split()[0][1:]
-            task = getattr(iraf, task)
-        if '=' in line and line[0] != '#':
-            line = line.split()
-            try:
-                if line[2] == '#':
-                    task.setParam(line[0], '')
-                else:
-                    task.setParam(line[0], line[2])
-            except IndexError:
-                task.setParam(line[0], '')
-    if gmos.gswavelength.coordlist[0] not in ('/','$') and \
-            gmos.gswavelength.coordlist[:2] != '{$' and \
-            gmos.gswavelength.coordlist[:6] != '../../':
-        gmos.gswavelength.coordlist = '../../' + gmos.gswavelength.coordlist
-  return
 
 
 if __name__ == '__main__':
