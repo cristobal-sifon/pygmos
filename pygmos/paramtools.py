@@ -8,8 +8,52 @@ from os.path import abspath, dirname, join, split
 #from iraf import gemini
 #from iraf import gmos
 
+# folder where pygmos is stored
+pygmos_path = split(abspath(dirname(__file__)))[0]
+
+
+def dump_file(infile):
+    """
+    Dump contents of file into output provided in the command line.
+
+    Adapted from
+    https://docs.python.org/3/library/argparse.html#action and
+    https://goo.gl/BWfK5Y
+    
+    """
+    class DumpFile(argparse.Action):
+        def __call__(self, parser, args, outfile, option_string=None):
+            if outfile is None:
+                outfile = sys.stdout
+            else:
+                outfile = open(outfile, 'w')
+            with open(infile) as f:
+                print(f.read(), file=outfile)
+            sys.exit()
+    return DumpFile
+
+
+def read_iraf_params(args):
+    """Read IRAF task parameters from IRAF parameter file"""
+    with open(args.paramfile) as pfile:
+        for line in pfile:
+            if line[0] == '@':
+                task = getattr(iraf, line.split()[0][1:])
+            if '=' in line and line[0] != '#':
+                # just in case, so that splitting by spaces works
+                line = line.replace('=', ' = ')
+                line = line.split()
+                if len(line) > 2 and line[2] != '#':
+                    task.setParam(
+                        line[0], line[2].replace(
+                            'pygmos$', '{0}/'.format(pygmos_path)))
+                else:
+                    task.setParam(line[0], '')
+    return
+
 
 def read_args():
+    """Wrapper to parse and customize command-line arguments"""
     parser = parse_args()
     args = setup_args(parser)
     return args
@@ -38,7 +82,8 @@ def parse_args():
              ' reducing the data')
     add('-m', '--masks', dest='masks', nargs='*', default=['all'],
         help='Which masks to reduce (identified by their numbers)')
-    add('-p', '--param-file', dest='paramfile', default='pygmos.param',
+    add('-p', '--param-file', dest='paramfile',
+        default=join(pygmos_path, 'pygmos.param'),
         help='File containing IRAF parameter definitions')
     add('--program', dest='program', default='',
         help='Gemini Program ID')
@@ -47,8 +92,6 @@ def parse_args():
              ' one')
 
     # dump files
-    # folder where pygmos is stored
-    pygmos_path = split(abspath(dirname(__file__)))[0]
     add('-d', dest='dump', nargs='?', default=None,
         action=dump_file(join(pygmos_path, 'docs/pygmos.params')))
     add('-dd', dest='dump', nargs='?', default=None,
@@ -61,49 +104,6 @@ def setup_args(parser):
     args = parser.parse_args()
     return args
 
-
-def read_iraf_params(args):
-    pfile = open(paramfile)
-    for line in pfile:
-        if line[0] == '@':
-            task = line.split()[0][1:]
-            task = getattr(iraf, task)
-        if '=' in line and line[0] != '#':
-            line = line.split()
-            try:
-                if line[2] == '#':
-                    task.setParam(line[0], '')
-                else:
-                    task.setParam(line[0], line[2])
-            except IndexError:
-                task.setParam(line[0], '')
-    if gmos.gswavelength.coordlist[0] not in ('/','$') and \
-            gmos.gswavelength.coordlist[:2] != '{$' and \
-            gmos.gswavelength.coordlist[:6] != '../../':
-        gmos.gswavelength.coordlist = join(
-            '..', '..', gmos.gswavelength.coordlist)
-    return
-
-
-def dump_file(infile):
-    """
-    Dump contents of file into output provided in the command line.
-
-    Adapted from
-    https://docs.python.org/3/library/argparse.html#action and
-    https://goo.gl/BWfK5Y
-    
-    """
-    class DumpFile(argparse.Action):
-        def __call__(self, parser, args, outfile, option_string=None):
-            if outfile is None:
-                outfile = sys.stdout
-            else:
-                outfile = open(outfile, 'w')
-            with open(infile) as f:
-                print(f.read(), file=outfile)
-            sys.exit()
-    return DumpFile
 
 
 # for testing purposes
