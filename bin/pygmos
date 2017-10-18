@@ -58,20 +58,6 @@ if '-d' in sys.argv:
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
 iraf.task(lacos_spec=os.path.join(pygmos_path,'lacos_spec.cl'))
 
-def default_params():
-    """
-    Default parameters. Modify these if your usual setup is different. All these
-    can also be modified from the command line.
-    """
-    align = False # make wavelength-aligned masks?
-    cut = True # cut the spectra into single fits files?
-    program = '' # only need to define it if there are files from more than
-                # one GMOS program in the same folder
-                # and you only want to reduce data from one of them
-    # better not to modify within this file:
-    masks = ['all']
-    return align, cut, masks, program
-
 
 def main():
     """
@@ -80,7 +66,6 @@ def main():
     number(s) of the mask(s) wanted.
 
     """
-    intro()
     cluster, align, align_suffix, masks, cutdir, program = ReadParameters()
 
     cluster = cluster.replace(' ', '_')
@@ -803,6 +788,21 @@ def write_offsets(inimages, output):
 #--------------------------------------------------------------------------#
 #--------------------------------------------------------------------------#
 
+def default_params():
+    """
+    Default parameters. Modify these if your usual setup is different. All these
+    can also be modified from the command line.
+    """
+    align = False # make wavelength-aligned masks?
+    cut = True # cut the spectra into single fits files?
+    program = '' # only need to define it if there are files from more than
+                # one GMOS program in the same folder
+                # and you only want to reduce data from one of them
+    # better not to modify within this file:
+    masks = ['all']
+    return align, cut, masks, program
+
+
 def ReadParameters():
     align, cut, masks, program = default_params()
 
@@ -888,34 +888,9 @@ def ReadIRAFParams():
   return
 
 
-def intro():
-    print()
-    print('  ', '-' * 74)
-    print('  ', '-' * 74)
-    print()
-    print('\t\t################################################')
-    print('\t\t#                                              #')
-    print('\t\t#                    PyGMOS:                   #')
-    print('\t\t#                                              #')
-    print('\t\t#  PyRAF-GMOS reduction pipeline developed by  #')
-    print('\t\t#                Cristóbal Sifón               #')
-    print('\t\t#                                              #')
-    print('\t\t#               current address:               #')
-    print('\t\t#     Princeton University, Princeton, USA     #')
-    print('\t\t#           sifon@astro.princeton.edu          #')
-    print('\t\t# -------------------------------------------- #')
-    print('\t\t#                 January, 2011                #')
-    print('\t\t#           Last Updated October, 2017         #')
-    print('\t\t#                                              #')
-    print('\t\t################################################')
-    print()
-    print('  ', '-' * 74)
-    print('  ', '-' * 74)
-    print()
-    return
-
-
 if __name__ == '__main__':
     t0 = time.time()
     main()
-    print('\nTotal execution time {0:.1f} min'.format(((time.time() - t0) / 60)))
+    print('\nTotal execution time {0:.1f} min'.format(
+        ((time.time() - t0) / 60)))
+

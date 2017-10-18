@@ -1,3 +1,6 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import os
 import re
 try:
@@ -8,6 +11,17 @@ except ImportError:
 # folder where pygmos is stored
 here = os.path.abspath(os.path.dirname(__file__))
 
+#this function copied from pip's setup.py
+#https://github.com/pypa/pip/blob/1.5.6/setup.py
+#so that the version is only set in the __init__.py and then read here
+#to be consistent
+def find_version(fname):
+    version_file = read(fname)
+    version_match = re.search(
+        r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
 
 
 #Taken from the Python docs:
@@ -22,7 +36,7 @@ def read(fname):
 
 setup(
     name='pygmos',
-    version='0.1.0.dev',
+    version=find_version('pygmos/__init__.py'),
     description='Automatic reduction of GMOS spectroscopic data',
     author='Cristobal Sifon',
     author_email='sifon@astro.princeton.edu',
