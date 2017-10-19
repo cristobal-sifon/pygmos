@@ -135,7 +135,7 @@ def Call_align(args, inimage, suffix, Nslits):
 def Call_gsskysub(args, tgsfile, align=''):
     print('-' * 30)
     print('Calling gsskysub')
-    print(' {0}{1} -->'.format(tgsfile, align, end=' ')
+    print(' {0}{1} -->'.format(tgsfile, align, end=' '))
     out = gmos.gsskysub.outpref + tgsfile + align
     print(out)
     delete('{0}.fits'.format(out))
@@ -253,7 +253,7 @@ def Cut_spectra(args, cluster, mask, cutdir='spectra', spec='1d'):
                 #mask + '_0' + str(i) + prefix[0]
             out = os.path.join(
                 cutdir, '{0}_{1}_0{2}{3}'.format(
-                            cluster.replace(' ', '_'), mask, i, prefix[0])
+                            cluster.replace(' ', '_'), mask, i, prefix[0]))
             #utils.delete(out + '.fits')
             #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
         else:
@@ -261,7 +261,7 @@ def Cut_spectra(args, cluster, mask, cutdir='spectra', spec='1d'):
                 #mask + '_' + str(i) + prefix[0]
             out = os.path.join(
                 cutdir, '{0}_{1}_{2}{3}'.format(
-                            cluster.replace(' ', '_'), mask, i, prefix[0])
+                            cluster.replace(' ', '_'), mask, i, prefix[0]))
             #utils.delete(out + '.fits')
             #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
         utils.delete(out + '.fits')
