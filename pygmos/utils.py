@@ -1,6 +1,44 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
+import sys
+from glob import glob
+try:
+    from astropy.io import fits as pyfits
+except ImportError:
+    import pyfits
+
+
+intro = """
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+          ################################################
+          #                                              #
+          #                    PyGMOS:                   #
+          #                                              #
+          #  PyRAF-GMOS reduction pipeline developed by  #
+          #                Cristóbal Sifón               #
+          #                                              #
+          #               current address:               #
+          #     Princeton University, Princeton, USA     #
+          #           sifon@astro.princeton.edu          #
+          #                                              #
+          #   https://github.com/cristobal-sifon/pygmos  #
+          #                                              #
+          # -------------------------------------------- #
+          #                 January, 2011                #
+          #           Last Updated October, 2017         #
+          #                                              #
+          ################################################
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+"""
+
 
 def getScienceFiles(assocfile, mask):
     file = open(assocfile)
@@ -23,7 +61,7 @@ def getScienceFiles(assocfile, mask):
 
 def getDarks():
     darks = []
-    for ls in glob.glob('*.fits'):
+    for ls in glob('*.fits'):
         head = pyfits.getheader(ls)
         if head['OBSTYPE'] == 'DARK':
             darks.append(ls[:-5])
@@ -123,7 +161,7 @@ def getNstars(filename):
 
 
 def ReadKey(fitsfile, key):
-    head = getheader(fitsfile + '.fits')
+    head = pyfits.getheader(fitsfile + '.fits')
     try:
         value = head[key]
     except KeyError:
@@ -132,7 +170,7 @@ def ReadKey(fitsfile, key):
 
 
 def delete(filename):
-    ls = glob.glob(filename)
+    ls = glob(filename)
     for filename in ls:
         os.system('rm %s' %filename)
     return
@@ -180,3 +218,7 @@ def write_offsets(inimages, output):
     for i in range(len(xoffset)):
         print(xoffset[i], '\t', yoffset[i], file=out)
     return output
+
+
+
+
