@@ -16,7 +16,7 @@ from . import utils
 
 
 def Call_gdisplay(args, image, frame):
-    if not args.ds9
+    if not args.ds9:
         gmos.gdisplay(image, str(frame))
         print('Image', image, 'displayed in frame', frame)
     return
