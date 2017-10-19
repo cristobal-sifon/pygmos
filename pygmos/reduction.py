@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 import os
 from pyraf import iraf
 
-
+from . import check_gswave, tasks, utils
 
 
 def longslit(args, cluster, waves, assoc):
@@ -16,11 +16,11 @@ def longslit(args, cluster, waves, assoc):
     mask = 'longslit'
     path = os.path.join(cluster.replace(' ', '_'), mask)
     for wave in waves:
-        flat = getFile(assoc, mask=mask, obs='flat', wave=wave)
+        flat = utils.getFile(assoc, mask=mask, obs='flat', wave=wave)
         # finding the flat is enough to know that the mask exists.
         if flat:
-            arc = getFile(assoc, mask=mask, obs='arc', wave=wave)
-            science = getFile(assoc, mask=mask, obs='science', wave=wave)
+            arc = utils.getFile(assoc, mask=mask, obs='arc', wave=wave)
+            science = utils.getFile(assoc, mask=mask, obs='science', wave=wave)
             iraf.chdir(path)
             flat, comb = tasks.Call_gsflat(flat)
             arc = tasks.Call_gsreduce(arc, flat, comb)
@@ -64,7 +64,7 @@ def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
     path = os.path.join(cluster, 'mask{0}'.format(mask))
 
     for science in scienceFiles.keys():
-        flat = getFile(
+        flat = utils.getFile(
             assoc, science, mask=int(mask), obs='flat',
             wave=scienceFiles[science])
         # finding the flat is enough to know that the mask exists.
@@ -74,9 +74,10 @@ def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
             continue
         # all observations add up to 1
         Nmasks += 1 / len(scienceFiles.keys())
-        arc = getFile(assoc, science, mask=int(mask),
-                        obs='arc', wave=scienceFiles[science])
-        Copy_MDF(science, cluster, str(mask))
+        arc = utils.getFile(
+            assoc, science, mask=int(mask), obs='arc',
+            wave=scienceFiles[science])
+        utils.Copy_MDF(science, cluster, str(mask))
         iraf.chdir(path)
 
         flat, comb = tasks.Call_gsflat(flat)
@@ -129,10 +130,11 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
     print('Mask {0}'.format(mask), end=2*'\n')
     path = os.path.join(cluster, 'mask{0}'.format(mask))
 
-    darks = getDarks()
+    darks = utils.getDarks()
     for science in scienceFiles.keys():
-        arc = getFile(assoc, science, mask=int(mask), obs='arc',
-                      wave=scienceFiles[science])
+        arc = utils.getFile(
+            assoc, science, mask=int(mask), obs='arc',
+            wave=scienceFiles[science])
         # finding the arc is enough to know that the mask exists.
         if not arc:
             print('Not enough data for mask {2} (science file {1})'.format(
@@ -142,7 +144,7 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
         Nmasks += 1 / len(scienceFiles.keys())
         #arc = getFile(assoc, science, mask = int(mask), obs = 'arc',
                         #wave = scienceFiles[science])
-        Copy_MDF(science, cluster, str(mask))
+        utils.Copy_MDF(science, cluster, str(mask))
         iraf.chdir(path)
 
         dark = tasks.Call_gbias(
@@ -162,7 +164,7 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
         science = tasks.Call_gmosaic(
             science, fl_paste='no', geointer='linear', fl_fixpix='no',
             fl_clean='yes')
-        offsetfile = write_offsets(inimages, 'offsets.dat')
+        offsetfile = utils.write_offsets(inimages, 'offsets.dat')
         # SHOULD PROBABLY CREATE A BPM, see step 7 of Adam's notes
         # (skipping for now)
         #science = tasks.Call_imcombine(science, 

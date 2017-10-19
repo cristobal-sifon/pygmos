@@ -80,7 +80,12 @@ def parse_args():
         help='Only run the inventory for a given object, without actually' \
              ' reducing the data')
     add('-m', '--masks', dest='masks', nargs='*', default=['all'],
-        help='Which masks to reduce (identified by their numbers)')
+        help='Which MOS masks to reduce (identified by their numbers),' \
+             ' or "longslit" if you are going to reduce longslit' \
+             ' observations.')
+    add('-n', '--nod-shuffle', dest='nod', action='store_true',
+        help='Set if reducing nod & shuffle observations' \
+             ' (NOT YET IMPLEMENTED)')
     add('--no-ds9', dest='ds9', action='store_false',
         help='Do not start a ds9 session to display files as they are' \
              ' created')
@@ -107,6 +112,10 @@ def parse_args():
 def setup_args(parser):
     """Any manipulation of the arguments that may be required"""
     args = parser.parse_args()
+    if args.nod:
+        print('\nSorry, reduction of nod & shuffle observations' \
+              ' is not supported at the moment. Exiting pygmos.\n\n')
+        sys.exit()
     return args
 
 
