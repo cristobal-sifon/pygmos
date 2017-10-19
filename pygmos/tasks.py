@@ -87,7 +87,7 @@ def Call_lacos(args, science, Nslits=0, longslit=False):
             outmask = os.path.join('slits', '{0}_mask{1}'.format(science, j))
             iraf.lacos_spec(slit, outslit, outmask, gain=gain, readn=rdnoise)
             iraf.imcopy(
-                outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], j)
+                outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], j),
                 verbose='no')
     utils.delete('lacos*')
     utils.removedir('slits')
