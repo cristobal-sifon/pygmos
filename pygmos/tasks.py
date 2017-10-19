@@ -29,12 +29,12 @@ def Call_gsflat(args, flat, fl_over='no', fl_inter='no', fl_answer='no'):
     gmos.gsflat(flat, output, combflat=comb, fl_over=fl_over,
                 fl_inter=fl_inter, fl_answer=fl_answer)
     if gmos.gsflat.fl_detec == 'yes':
-        os.system('rm %s.fits' %(gmos.gmosaic.outpref + output))
-        os.system('rm %s.fits' %(gmos.gmosaic.outpref + comb))
-        gmos.gmosaic(output, fl_fixpix='yes', verbose='no',
-                    logfile='gmosaic.log')
-        gmos.gmosaic(comb, fl_fixpix='yes', verbose='no',
-                    logfile='gmosaic.log')
+        os.system('rm {0}{1}.fits'.format(gmos.gmosaic.outpref, output))
+        os.system('rm {0}{1}.fits'.format(gmos.gmosaic.outpref, comb))
+        gmos.gmosaic(
+            output, fl_fixpix='yes', verbose='no', logfile='gmosaic.log')
+        gmos.gmosaic(
+            comb, fl_fixpix='yes', verbose='no', logfile='gmosaic.log')
         output = gmos.gmosaic.outpref + output
         comb = gmos.gmosaic.outpref + comb
     return output, comb
@@ -51,12 +51,12 @@ def Call_gsreduce(args, img, flat='', grad='', mode='regular'):
             gmos.gsreduce(img, fl_flat='no', gradimage=grad)
     elif mode == 'ns1':
         gmos.gsreduce(img, fl_over='no', fl_flat='no', fl_gmosaic='no',
-                        fl_gsappwave='no', fl_cut='no', fl_title='no')
+                      fl_gsappwave='no', fl_cut='no', fl_title='no')
     elif mode == 'ns2':
         gmos.gsreduce.outpref = 'r'
         gmos.gsreduce(img, fl_fixpix='no', fl_trim='no', fl_bias='no',
-                        fl_flat='no', fl_gsappwave='no', fl_cut='no',
-                        fl_title='no', geointer='nearest')
+                      fl_flat='no', fl_gsappwave='no', fl_cut='no',
+                      fl_title='no', geointer='nearest')
     return gmos.gsreduce.outpref + img
 
 
@@ -83,11 +83,12 @@ def Call_lacos(args, science, Nslits=0, longslit=False):
         for i in range(1, Nslits + 1):
             j = str(i)
             slit = science + '[sci,' + j + ']'
-            outslit = 'slits/' + science + '_' + j
-            outmask = 'slits/' + science + '_mask' + j
+            outslit = os.path.join('slits', '{0}_{1}'.format(science, j))
+            outmask = os.path.join('slits', '{0}_mask{1}'.format(science, j))
             iraf.lacos_spec(slit, outslit, outmask, gain=gain, readn=rdnoise)
-            iraf.imcopy(outslit, outfile[:-5] + '[SCI,' + j + ',overwrite]',
-                        verbose='no')
+            iraf.imcopy(
+                outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], j)
+                verbose='no')
     utils.delete('lacos*')
     utils.removedir('slits')
     print(outfile[:-5])
@@ -106,13 +107,13 @@ def Call_gswave(args, arc):
 def Call_gstransform(args, image, arc):
     print('-' * 30)
     print('Calling gstransform')
-    print(image, '-->', end=' ')
+    print('{0} -->'.format(image), end=' ')
     if image[-5:] == 'lacos':
         out = gmos.gstransform.outpref + image[:-6]
     else:
         out = gmos.gstransform.outpref + image
     print(out)
-    utils.delete(out + '.fits')
+    utils.delete('{0}.fits'.format(out))
     gmos.gstransform(image, outimage=out, wavtraname=arc)
     print('-' * 30)
     return out
@@ -134,10 +135,10 @@ def Call_align(args, inimage, suffix, Nslits):
 def Call_gsskysub(args, tgsfile, align=''):
     print('-' * 30)
     print('Calling gsskysub')
-    print(' ', tgsfile + align, '-->', end=' ')
+    print(' {0}{1} -->'.format(tgsfile, align, end=' ')
     out = gmos.gsskysub.outpref + tgsfile + align
     print(out)
-    delete(out + '.fits')
+    delete('{0}.fits'.format(out))
     gmos.gsskysub(tgsfile + align, output=out)
     print('-' * 30)
     return out
@@ -168,8 +169,9 @@ def Call_gnscombine(args, cluster, inimages, outimage=''):
     print(' ', inimages, '-->', outimage)
     gmos.gnscombine.outimage = outimage
     utils.delete(outimage + '.fits')
-    gmos.gnscombine(inimages, 'offsets.dat', outimage,
-                    outcheckim=outimage + '_cr', outmedsky=outimage + '_sky')
+    gmos.gnscombine(
+        inimages, 'offsets.dat', outimage,
+        outcheckim='{0}_cr'.format(outimage), outmedsky=outimage + '_sky')
     print('-' * 30)
     return out
 
@@ -177,16 +179,16 @@ def Call_gnscombine(args, cluster, inimages, outimage=''):
 def Call_imcombine(args, cluster, mask, im, Nslits=1):
     print('-' * 30)
     if mask == 'longslit':
-        outimage = gmos.gsskysub.outpref + gmos.gstransform.outpref + \
-                    gmos.gsreduce.outpref
-        outimage += '-' + cluster.replace(' ', '_') + '_ls'
+        outimage = '{0}{1}{2}-{3}_ls'.format(
+            gmos.gsskysub.outpref, gmos.gstransform.outpref,
+            gmos.gsreduce.outpref, cluster.replace(' ', '_'))
     else:
-        outimage = gmos.gsskysub.outpref + gmos.gstransform.outpref + \
-                    gmos.gsreduce.outpref
-        outimage += '-' + cluster.replace(' ', '_') + '_mask' + mask
-    print('Combining images', im, '-->', outimage)
-    os.system('cp ' + im[0] + '.fits ' + outimage + '.fits')
-    f = pyfits.open(im[0] + '.fits ')
+        outimage = '{0}{1}{2}-{3}_mask{4}'.format(
+            gmos.gsskysub.outpref, gmos.gstransform.outpref,
+            gmos.gsreduce.outpref, cluster.replace(' ', '_'), mask)
+    print('Combining images {0} --> {1}'.format(im, outimage))
+    os.system('cp {0}.fits {1}.fits'.format(im[0], outimage))
+    f = pyfits.open('{0}.fits'.format(im[0]))
     gain = float(f[0].header['GAINMULT'])
     rdnoise = float(f[0].header['RDNOISE'])
     f.close()
@@ -194,9 +196,10 @@ def Call_imcombine(args, cluster, mask, im, Nslits=1):
         j = str(i)
         inslit = ''
         for jm in im:
-            inslit = jm + '[sci,' + j + '],'
-        inslit = inslit[:-1] # to remove the last ','
-        outslit = outimage + '[sci,' + j + ',overwrite]'
+            inslit = '{0}[sci,{1}],'.format(jm, j)
+        # to remove the last ','
+        inslit = inslit[:-1]
+        outslit = outimage + '[sci,{0},overwrite]'.format(j)
         iraf.imcombine(inslit, output=outslit, gain=gain, rdnoise=rdnoise)
     print('-' * 30)
     return outimage
@@ -204,13 +207,13 @@ def Call_imcombine(args, cluster, mask, im, Nslits=1):
 
 def Call_gsextract(args, cluster, mask):
     if mask == 'longslit':
-        infile = gmos.gsskysub.outpref + gmos.gstransform.outpref + \
-                gmos.gsreduce.outpref
-        infile += '-' + cluster.replace(' ', '_') + '_ls'
+        infile = '{0}{1}{2}-{3}_ls'.format(
+            gmos.gsskysub.outpref, gmos.gstransform.outpref,
+            gmos.gsreduce.outpref, cluster.replace(' ', '_'))
     else:
-        infile = gmos.gsskysub.outpref + gmos.gstransform.outpref + \
-                gmos.gsreduce.outpref
-        infile += '-' + cluster.replace(' ', '_') + '_mask' + mask
+        infile = '{0}{1}{2}-{3}_mask{4}'.format(
+            gmos.gsskysub.outpref, gmos.gstransform.outpref,
+            gmos.gsreduce.outpref, cluster.replace(' ', '_'), mask)
     print('-' * 30)
     print('Calling gsextract')
     print(infile, '-->', end=' ')
@@ -240,20 +243,29 @@ def Cut_spectra(args, cluster, mask, cutdir='spectra', spec='1d'):
     elif spec == '2d':
         prefix = gmos.gsskysub.outpref + gmos.gstransform.outprefix + \
                  gmos.gsreduce.outpref
-    filename = os.path.join(cluster.replace(' ', '_'), 'mask'+mask,
-                            prefix+'-'+cluster.replace(' ', '_')+'_mask'+mask)
+    filename = os.path.join(
+        cluster.replace(' ', '_'), 'mask{0}'.format(mask),
+        '{0}-{1}_mask{2}'.format(prefix, cluster.replace(' ', '_'), mask))
     Nslits = getNslits(filename)
     for i in range(1, Nslits + 1):
         if i < 10:
-            out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
-                mask + '_0' + str(i) + prefix[0]
-            utils.delete(out + '.fits')
-            iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
+            #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
+                #mask + '_0' + str(i) + prefix[0]
+            out = os.path.join(
+                cutdir, '{0}_{1}_0{2}{3}'.format(
+                            cluster.replace(' ', '_'), mask, i, prefix[0])
+            #utils.delete(out + '.fits')
+            #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
         else:
-            out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
-                mask + '_' + str(i) + prefix[0]
-            utils.delete(out + '.fits')
-            iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
+            #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
+                #mask + '_' + str(i) + prefix[0]
+            out = os.path.join(
+                cutdir, '{0}_{1}_{2}{3}'.format(
+                            cluster.replace(' ', '_'), mask, i, prefix[0])
+            #utils.delete(out + '.fits')
+            #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
+        utils.delete(out + '.fits')
+        iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
     print('-' * 30)
     return
 
