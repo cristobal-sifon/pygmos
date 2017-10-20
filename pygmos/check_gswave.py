@@ -13,6 +13,8 @@ import shutil
 from pyraf import iraf
 from iraf import tv
 
+from . import inventory
+
 # complementary files will be located in the pygmos folder so need to
 # define the environment
 pygmos_path = os.path.dirname(os.path.split(

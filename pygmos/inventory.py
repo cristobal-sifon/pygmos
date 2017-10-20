@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-                        
+
 from glob import glob
 import os
 import sys
@@ -36,7 +36,7 @@ def generate(program, cluster, bias, masktype='mos', verbose=True):
 
 
 def read(cluster, bias, col=1):
-    file = open(cluster + '.assoc')
+    file = open('{0}.assoc'.format(cluster))
     # the column number shouldn't change, but just in case.
     masks = []
     # this seems rather unnecessary
@@ -47,12 +47,12 @@ def read(cluster, bias, col=1):
             line = line.split()
             m = int(line[col])
             if m not in masks:
-                makedir(os.path.join(cluster, 'mask%s' %m))
+                makedir(os.path.join(cluster, 'mask{0}'.format(m)))
                 masks.append(m)
-            os.chdir('%s/mask%s' %(cluster, m))
-            os.system('ln -sf ../../%s* .' %bias)
+            os.chdir(os.path.join(cluster, 'mask{0}'.format(m)))
+            os.system('ln -sf ../../{0}* .'.format(bias))
             for i in range(4, 7):
-                os.system('ln -sf ../../%s.fits* .' %line[i])
+                os.system('ln -sf ../../{0}.fits* .'.format(line[i]))
             os.chdir('../..')
     file.close()
     return masks
@@ -67,8 +67,8 @@ def mos(cluster, program, bias, verbose=True):
         head = getheader(filename)
         try:
             if head['MASKNAME'] != 'None':
-                if head['OBJECT'].replace(' ', '_') == cluster and \
-                        head['OBSCLASS'] == 'science':
+                if head['OBJECT'].replace(' ', '_') == cluster \
+                        and head['OBSCLASS'] == 'science':
                     if (program != '' and program == head['GEMPRGID']) \
                             or program == '':
                         obsid = head['OBSID']
@@ -131,7 +131,7 @@ def mos(cluster, program, bias, verbose=True):
     try:
         Ncols = len(exp[0])
     except IndexError:
-        raise NameError('Object %s not found' %cluster)
+        raise NameError('Object {0} not found'.format(cluster))
     for i in range(Nexp):
         msg = '{0}  \t{1:2d}\t{2}\t{3:5d}\t\t{4}\t{5}\t{6}'.format(
                 exp[i][0], exp[i][1], int(10*exp[i][2]),
@@ -163,8 +163,8 @@ def longslit(cluster, program, bias, verbose=True):
     for filename in ls:
         head = getheader(filename)
         try:
-            if head['OBJECT'].replace(' ', '_') == cluster and \
-                    head['OBSCLASS'] == 'science':
+            if head['OBJECT'].replace(' ', '_') == cluster \
+                    and head['OBSCLASS'] == 'science':
                 if (program != '' and program == head['GEMPRGID']) \
                         or program == '':
                     obsid = head['OBSID']
@@ -176,20 +176,21 @@ def longslit(cluster, program, bias, verbose=True):
             pass
     Nexp = len(exp)
     makedir(os.path.join(cluster, 'longslit'))
-  
+
     info = []
     for filename in ls:
         head = getheader(filename)
         try:
             for i in range(Nexp):
-                if head['OBSID'] == exp[i][0] and head['CENTWAVE'] == exp[i][2]:
+                if head['OBSID'] == exp[i][0] \
+                        and head['CENTWAVE'] == exp[i][2]:
                     obsID = exp[i][0]
                     info.append([filename[:-5], obsID, exp[i][1],
                                 head['OBSTYPE'], exp[i][2]])
         except KeyError:
             pass
     Nfiles = len(info)
-  
+
     for i in range(Nexp):
         for j in range(3):
             exp[i].append('')
@@ -204,7 +205,7 @@ def longslit(cluster, program, bias, verbose=True):
                 if info[j][3] == 'ARC':
                     exp[i][6] = info[j][0]
 
-    out = open(cluster + '.assoc', 'w')
+    out = open('{0}.assoc'.format(cluster), 'w')
     head = 'ObservationID\t\tMask\t\tWave\t Time\t\tScience\t\tFlat\t\tArc'
     print(head, file=out)
     if verbose:

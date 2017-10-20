@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import (absolute_import, division, print_function)
 
 import glob
 import os
@@ -11,10 +10,10 @@ except ImportError:
     import pyfits
 import sys
 import time
-#from pyraf import iraf
-#from iraf import gemini
-#from iraf import gemtools
-#from iraf import gmos
+from pyraf import iraf
+from iraf import gemini
+from iraf import gemtools
+from iraf import gmos
 
 """
 PyGMOS
@@ -23,8 +22,6 @@ PyGMOS
 # Other packages provided with the code:
 from pygmos import (check_gswave, inventory, paramtools, reduction, tasks,
                     utils)
-
-sys.exit()
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
@@ -43,24 +40,30 @@ def main():
     number(s) of the mask(s) wanted.
 
     """
+    print(utils.intro)
+
     args = paramtools.read_args()
+    print('masks =', args.masks)
+    print('program =', args.program)
 
     # Default value if nothing was specified in the console
-    if masks == ['all']:
+    if args.masks == 'all':
         if args.read_inventory:
-            masks = sorted(inventory.read(cluster, gmos.gsreduce.bias))
+            masks = sorted(inventory.read(args.objectid, gmos.gsreduce.bias))
         else:
             masks = sorted(inventory.generate(
-                '', cluster, gmos.gsreduce.bias))
-        masks = [str(m) for m in masks]
-    elif masks in ('longslit', 'ls', 'long'):
-        inventory.main(
-            program, cluster, gmos.gsreduce.bias, masktype='longslit')
+                '', args.objectid, gmos.gsreduce.bias))
+        args.masks = [str(m) for m in masks]
+    elif args.masks == 'longslit':
+        inventory.generate(
+            args.program, args.objectid, gmos.gsreduce.bias,
+            masktype=args.masks)
     else:
         if args.read_inventory:
-            inventory.read(cluster, gmos.gsreduce.bias)
+            inventory.read(args.objectid, gmos.gsreduce.bias)
         else:
-            inventory.main(program, cluster, gmos.gsreduce.bias)
+            inventory.generate(args.program, args.objectid,
+            gmos.gsreduce.bias)
     if args.inventory_only:
         print()
         return

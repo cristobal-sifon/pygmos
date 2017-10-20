@@ -79,7 +79,7 @@ def parse_args():
     add('-i', '--inventory', dest='inventory_only', action='store_true',
         help='Only run the inventory for a given object, without actually' \
              ' reducing the data')
-    add('-m', '--masks', dest='masks', nargs='*', default=['all'],
+    add('-m', '--masks', dest='masks', nargs='*', default='all',
         help='Which MOS masks to reduce (identified by their numbers),' \
              ' or "longslit" if you are going to reduce longslit' \
              ' observations.')
@@ -92,6 +92,8 @@ def parse_args():
     add('-p', '--param-file', dest='paramfile',
         default=join(environ['pygmos_path'], 'pygmos.param'),
         help='File containing IRAF parameter definitions')
+    add('--path', dest='path', default='./',
+        help='path to raw GMOS files')
     add('--program', dest='program', default='',
         help='Gemini Program ID')
     add('-r', '--read-inventory', dest='read_inventory', action='store_true',
