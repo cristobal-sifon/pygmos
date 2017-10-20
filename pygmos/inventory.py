@@ -123,16 +123,18 @@ def mos(cluster, program, bias, path='./', verbose=True):
                 if info[j][3] == 'ARC':
                     exp[i][6] = info[j][0]
 
+    # did we find the object?
+    try:
+        Ncols = len(exp[0])
+    except IndexError:
+        raise ValueError('Object {0} not found'.format(cluster))
+
     out = open('{0}.assoc'.format(cluster_path), 'w')
     head = 'ObservationID\t\tMask\tWave\t Time\t\tScience\t\tFlat\t\tArc'
     print(head, file=out)
     if verbose:
         print(head)
 
-    try:
-        Ncols = len(exp[0])
-    except IndexError:
-        raise NameError('Object {0} not found'.format(cluster))
     for i in range(Nexp):
         msg = '{0}  \t{1:2d}\t{2}\t{3:5d}\t\t{4}\t{5}\t{6}'.format(
                 exp[i][0], exp[i][1], int(10*exp[i][2]),
