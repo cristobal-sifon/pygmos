@@ -1,5 +1,9 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import (absolute_import, division, print_function)
+# unicode_literals should not be imported above because Python2
+# setuptools  expects a "str" for parsing package_data. Including it
+# caused the following error:
+#   error in pygmos setup command: package_data must be a dictionary
+#   mapping package names to lists of wildcard patterns
 
 import os
 import re
