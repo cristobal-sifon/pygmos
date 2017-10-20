@@ -11,20 +11,21 @@ except ImportError:
     from pyfits import getheader
 
 
-def generate(program, cluster, bias, masktype='mos', verbose=True):
+def generate(program, cluster, bias, path='./', masktype='mos', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
         print(' Making inventory for object', cluster)
         print('#-' * 20 + '#\n')
     if masktype.lower() == 'mos':
-        masks = mos(cluster, program, bias)
+        masks = mos(cluster, program, bias, path)
     elif masktype.lower() == 'longslit':
-        longslit(cluster, program, bias)
+        longslit(cluster, program, bias, path)
     else:
         msg = 'Unknown mask type. Enter either "mos" (default) or' \
               ' "longslit". Exiting inventory.\n'
         print(msg)
         sys.exit()
+
     if verbose:
         print()
         print('#-' * 20 + '#')
@@ -58,11 +59,11 @@ def read(cluster, bias, col=1):
     return masks
 
 
-def mos(cluster, program, bias, verbose=True):
+def mos(cluster, program, bias, path='./', verbose=True):
     cluster_path = cluster.replace(' ', '_')
     masks = []
     exp = []
-    ls = glob('*.fits*')
+    ls = glob(os.path.join(path, '*.fits*'))
     for filename in ls:
         head = getheader(filename)
         try:
@@ -157,9 +158,9 @@ def mos(cluster, program, bias, verbose=True):
     return allmasks
 
 
-def longslit(cluster, program, bias, verbose=True):
+def longslit(cluster, program, bias, path='./', verbose=True):
     exp = []
-    ls = glob('*.fits')
+    ls = glob(os.path.join(path, '*.fits'))
     for filename in ls:
         head = getheader(filename)
         try:
