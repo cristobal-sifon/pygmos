@@ -3,9 +3,9 @@ procedure align (input)
 string input 
 string *list
 
-#este programa recibe como input la image.fits output de gstransform
-#como output da la image.fits sobreescrita con los espectros todos con el mismo 
-#rango de longitud de onda comenzando del 4000
+# this script takes as input the FITS image output of `gstransform` and
+# outputs the same FITS image, overwritten with all slits aligned to the
+# same wavelength range starting at 4000 Angstrom.
 
 begin 
 	string name = "shifted"

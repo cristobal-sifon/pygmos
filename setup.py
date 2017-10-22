@@ -1,5 +1,9 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import (absolute_import, division, print_function)
+# unicode_literals should not be imported above because Python2
+# setuptools  expects a "str" for parsing package_data. Including it
+# caused the following error:
+#   error in pygmos setup command: package_data must be a dictionary
+#   mapping package names to lists of wildcard patterns
 
 import os
 import re
@@ -43,10 +47,12 @@ setup(
     long_description=read('README.md'),
     url='https://github.com/cristobal-sifon/pygmos',
     packages=['pygmos'],
-    package_data={'': ['docs/*',
-                       'pygmos/CuAr_GMOS.dat',
-                       'pygmos/*.cl',
-                       'README.md']},
+    package_data={'pygmos': ['*.cl']},
     scripts=['bin/pygmos'],
-    install_requires=[]
+    data_files=[('docs', ['docs/pygmos.hlp',
+                          'docs/pygmos.params',
+                          'docs/pygmos.params.extended',
+                          'README.md']),
+                ('data', ['data/CuAr_GMOS.dat'])],
+    zip_safe=False
     )

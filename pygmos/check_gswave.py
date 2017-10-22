@@ -11,10 +11,15 @@ except ImportError:
     import pyfits
 import shutil
 from pyraf import iraf
-from iraf import gemini
-from iraf import gmos
-from iraf import images
 from iraf import tv
+
+from . import inventory
+
+# complementary files will be located in the pygmos folder so need to
+# define the environment
+pygmos_path = os.path.dirname(os.path.split(
+    inventory.__file__.replace('inventory.pyc', ''))[0])
+os.environ['pygmos_path'] = pygmos_path
 
 
 def main(cluster, mask, logfile, outfile, thresh=0.25):
@@ -96,7 +101,8 @@ def Look(image, mask):
 
 
 def IdentifyBadSlits(image, Nstars):
-    linefile = '../../CuAr_GMOS.dat'
+    linefile = os.path.join(
+        os.environ['pygmos_path'], 'data', 'CuAr_GMOS.dat')
     N = getNslits(image)
     bad = []
     print('Introduce the indices of poorly calibrated slits, separated' \
@@ -153,7 +159,8 @@ def getNslits(filename):
 
 def ManualCheck(lines, verbose=False):
     """Change `pr` for `verbose`"""
-    f = open('CuAr_GMOS-ACT.dat')
+    f = open(os.path.join(
+        os.environ['pygmos_path'], 'data', 'CuAr_GMOS-ACT.dat'))
     skylines = []
     for l in f:
         if l[0] != '#':
@@ -170,7 +177,7 @@ def ManualCheck(lines, verbose=False):
 
     med = numpy.median(diff)
     std = numpy.std(diff)
-    rms = std * numpy.sqrt(len(diff))
+    rms = std / len(diff)**0.5
     if verbose:
         print(diff)
     print('med = {0:.2f};\tstd = {1:.2f};\trms = {2:.2f} ({3} lines)'.format(
