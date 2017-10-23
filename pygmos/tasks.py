@@ -3,8 +3,7 @@ All tasks directly used in the reduction process. Tasks have been defined in
 the order that they should be executed.
 
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function
 
 import os
 from pyraf import iraf
