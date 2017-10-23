@@ -20,16 +20,16 @@ intro = """
           #                    PyGMOS:                   #
           #                                              #
           #  PyRAF-GMOS reduction pipeline developed by  #
-          #                Cristóbal Sifón               #
+          #                Cristobal Sifon               #
           #                                              #
           #               current address:               #
-          #     Princeton University, Princeton, USA     #
+          #   Princeton University, Princeton, NJ, USA   #
           #           sifon@astro.princeton.edu          #
           #                                              #
           #   https://github.com/cristobal-sifon/pygmos  #
           #                                              #
           # -------------------------------------------- #
-          #                 January, 2011                #
+          #                                              #
           #           Last Updated October, 2017         #
           #                                              #
           ################################################
