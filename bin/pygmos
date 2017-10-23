@@ -79,7 +79,7 @@ def main():
         iraf.task(align=os.path.join(pygmos_path, 'align.cl'))
 
     assoc = '{0}.assoc'.format(args.objectid)
-    waves = getWavelengths(assoc)
+    waves = utils.getWavelengths(assoc)
     print('\nObject:', args.objectid)
 
     if args.nod:
@@ -93,8 +93,7 @@ def main():
     else:
         for mask in masks:
             scienceFiles = utils.getScienceFiles(assoc, mask)
-            reduction.mos(
-                args, mask, scienceFiles, assoc, cutdir, align, align_suffix)
+            reduction.mos(args, mask, scienceFiles, assoc)
     return
 
 

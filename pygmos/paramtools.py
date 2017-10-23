@@ -4,7 +4,7 @@ import argparse
 import sys
 from os import environ
 from os.path import abspath, dirname, join, split
-#from pyraf import iraf
+from pyraf import iraf
 #from iraf import gemini
 #from iraf import gmos
 

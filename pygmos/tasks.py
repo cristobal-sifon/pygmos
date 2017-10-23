@@ -15,13 +15,13 @@ from . import utils
 
 
 def Call_gdisplay(args, image, frame):
-    if not args.ds9:
+    if args.ds9:
         gmos.gdisplay(image, str(frame))
         print('Image', image, 'displayed in frame', frame)
     return
 
 
-def Call_gsflat(args, flat, fl_over='no', fl_inter='no', fl_answer='no'):
+def Call_gsflat(flat, fl_over='no', fl_inter='no', fl_answer='no'):
     utils.RemovePreviousFiles(flat, filetype='flat')
     output = '{0}_flat'.format(flat)
     comb = '{0}_comb'.format(flat)
@@ -224,7 +224,7 @@ def Call_gsextract(args, cluster, mask):
     return out
 
 
-def Cut_spectra(args, cluster, mask, cutdir='spectra', spec='1d'):
+def Cut_spectra(args, mask, spec='1d'):
     """
     Takes the extracted spectra and copies them to a single folder called
     spectra/ (by default) in the parent folder. All spectra from all objects 
@@ -234,8 +234,9 @@ def Cut_spectra(args, cluster, mask, cutdir='spectra', spec='1d'):
     """
     print('-' * 30)
     print('Cutting spectra...')
-    utils.makedir(cutdir, overwrite='no')
+    utils.makedir(args.cutdir, overwrite='no')
     spectra = []
+    obj = args.objectid.replace(' ', '_')
     if spec == '1d':
         prefix = gmos.gsextract.outprefix + gmos.gsskysub.outpref + \
                  gmos.gstransform.outprefix + gmos.gsreduce.outpref
@@ -243,24 +244,24 @@ def Cut_spectra(args, cluster, mask, cutdir='spectra', spec='1d'):
         prefix = gmos.gsskysub.outpref + gmos.gstransform.outprefix + \
                  gmos.gsreduce.outpref
     filename = os.path.join(
-        cluster.replace(' ', '_'), 'mask{0}'.format(mask),
-        '{0}-{1}_mask{2}'.format(prefix, cluster.replace(' ', '_'), mask))
-    Nslits = getNslits(filename)
+        args.objectid.replace(' ', '_'), 'mask{0}'.format(mask),
+        '{0}-{1}_mask{2}'.format(prefix, obj, mask))
+    Nslits = utils.getNslits(filename)
     for i in range(1, Nslits + 1):
         if i < 10:
             #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
                 #mask + '_0' + str(i) + prefix[0]
             out = os.path.join(
-                cutdir, '{0}_{1}_0{2}{3}'.format(
-                            cluster.replace(' ', '_'), mask, i, prefix[0]))
+                args.cutdir,
+                '{0}_{1}_0{2}{3}'.format(obj, mask, i, prefix[0]))
             #utils.delete(out + '.fits')
             #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
         else:
             #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
                 #mask + '_' + str(i) + prefix[0]
             out = os.path.join(
-                cutdir, '{0}_{1}_{2}{3}'.format(
-                            cluster.replace(' ', '_'), mask, i, prefix[0]))
+                args.cutdir,
+                '{0}_{1}_{2}{3}'.format(obj, mask, i, prefix[0]))
             #utils.delete(out + '.fits')
             #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
         utils.delete(out + '.fits')

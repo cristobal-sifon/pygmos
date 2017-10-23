@@ -12,7 +12,7 @@ import shutil
 from pyraf import iraf
 from iraf import tv
 
-from . import inventory
+from . import inventory, utils
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
@@ -150,6 +150,9 @@ def ReplaceCalibrations(
 
 
 def getNslits(filename):
+    """
+    Is this duplicate from utils.py?
+    """
     f = pyfits.open('{0}.fits'.format(filename))
     N =  len(f) - 2
     f.close()

@@ -25,18 +25,18 @@ def longslit(args, waves, assoc):
             flat, comb = tasks.Call_gsflat(flat)
             arc = tasks.Call_gsreduce(arc, flat, comb)
             science = tasks.Call_gsreduce(science, flat, comb)
-            tasks.Call_gdisplay(science, 1)
+            tasks.Call_gdisplay(args, science, 1)
             science = tasks.Call_lacos(science, longslit=True)
-            tasks.Call_gdisplay(science, 1)
+            tasks.Call_gdisplay(args, science, 1)
             tasks.Call_gswave(arc)
             tasks.Call_gstransform(arc, arc)
 
             science = tasks.Call_gstransform(science, arc)
-            tasks.Call_gdisplay(science, 1)
+            tasks.Call_gdisplay(args, science, 1)
             combine.append(tasks.Call_gsskysub(science))
             if len(combine) == len(waves):
                 added = tasks.Call_imcombine(args.objectid, str(mask), combine)
-                tasks.Call_gdisplay(added, 1)
+                tasks.Call_gdisplay(args, added, 1)
 
         spectra = tasks.Call_gsextract(args.objectid, mask)
         Naps = raw_input('Number of apertures extracted: ')
@@ -51,7 +51,7 @@ def longslit(args, waves, assoc):
     return
 
 
-def mos(args, mask, scienceFiles, assoc, cutdir, align_suffix='_aligned'):
+def mos(args, mask, scienceFiles, assoc, align_suffix='_aligned'):
     """
     The reduction process for MOS data. It goes through file identification,
     calibration and extraction of spectra.
@@ -61,6 +61,10 @@ def mos(args, mask, scienceFiles, assoc, cutdir, align_suffix='_aligned'):
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
     path = os.path.join(args.objectid, 'mask{0}'.format(mask))
+
+    # debugging - I don't think this should ever happen but hey
+    if not scienceFiles:
+        raise ValueError('Empty variable scienceFiles')
 
     for science in scienceFiles.keys():
         flat = utils.getFile(
@@ -82,10 +86,10 @@ def mos(args, mask, scienceFiles, assoc, cutdir, align_suffix='_aligned'):
         flat, comb = tasks.Call_gsflat(flat)
         arc = tasks.Call_gsreduce(arc, flat, comb)
         science = tasks.Call_gsreduce(science, flat, comb)
-        tasks.Call_gdisplay(science, 1)
-        Nslits = getNslits(science)
+        tasks.Call_gdisplay(args, science, 1)
+        Nslits = utils.getNslits(science)
         science = tasks.Call_lacos(science, Nslits)
-        tasks.Call_gdisplay(science, 1)
+        tasks.Call_gdisplay(args, science, 1)
         tasks.Call_gswave(arc)
         tasks.Call_gstransform(arc, arc)
         if args.align:
@@ -93,29 +97,29 @@ def mos(args, mask, scienceFiles, assoc, cutdir, align_suffix='_aligned'):
         science = tasks.Call_gstransform(science, arc)
         if args.align:
             tasks.Call_align(science, align_suffix, Nslits)
-            tasks.Call_gdisplay(science + align_suffix, 1)
+            tasks.Call_gdisplay(args, science + align_suffix, 1)
             science = tasks.Call_gsskysub(science, align_suffix)
-            tasks.Call_gdisplay(science, 1)
+            tasks.Call_gdisplay(args, science, 1)
             combine.append(science)
         else:
-            tasks.Call_gdisplay(science, 1)
+            tasks.Call_gdisplay(args, science, 1)
             science = tasks.Call_gsskysub(science, '')
-            tasks.Call_gdisplay(science, 1)
+            tasks.Call_gdisplay(args. science, 1)
             combine.append(science)
         # once we've reduced all individual images
         if len(combine) == len(scienceFiles.keys()):
             added = tasks.Call_imcombine(args.objectid, str(mask), combine, Nslits)
-            tasks.Call_gdisplay(added, 1)
+            tasks.Call_gdisplay(args, added, 1)
             spectra = tasks.Call_gsextract(args.objectid, str(mask))
             if args.align:
                 aligned = tasks.Call_align(added, align, Nslits)
-                tasks.Call_gdisplay(aligned, 1)
+                tasks.Call_gdisplay(args, aligned, 1)
         delete('tmp*')
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='2d')
-    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='1d')
+    tasks.Cut_spectra(args, str(mask), spec='2d')
+    tasks.Cut_spectra(args, str(mask), spec='1d')
     check_gswave.main(
         args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks
@@ -172,11 +176,11 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
                                         #fl_inter = 'yes', fl_answer = 'yes')
         #arc = tasks.Call_gsreduce(arc, '', comb)
         #science = tasks.Call_gsreduce(science, '', comb, mode = 'ns1')
-        #tasks.Call_gdisplay(science, 1)
-        ##Nslits = getNslits(science)
+        #tasks.Call_gdisplay(args, science, 1)
+        ##Nslits = utils.getNslits(science)
         ##science = tasks.Call_lacos(science, Nslits)
         #science = tasks.Call_gnsskysub(science)
-        #tasks.Call_gdisplay(science, 1)
+        #tasks.Call_gdisplay(args, science, 1)
         #tasks.Call_gswave(arc)
         #tasks.Call_gstransform(arc, arc)
         #science = tasks.Call_gsreduce(science, flat, '', mode = 'ns2')
@@ -187,15 +191,15 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
         ##science = tasks.Call_gstransform(science, arc)
         ##if align:
             ##tasks.Call_align(science, align_suffix, Nslits)
-            ##tasks.Call_gdisplay(science + align_suffix, 1)
+            ##tasks.Call_gdisplay(args, science + align_suffix, 1)
             ##science = tasks.Call_gnscombine(science, align_suffix)
-        tasks.Call_gdisplay(science, 1)
+        tasks.Call_gdisplay(args, science, 1)
         delete('tmp*')
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='2d')
-    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='1d')
+    tasks.Cut_spectra(args, str(mask), spec='2d')
+    tasks.Cut_spectra(args, str(mask), spec='1d')
     check_gswave.main(
         args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks
