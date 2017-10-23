@@ -2,6 +2,10 @@
 An automated `PyRAF` data reduction pipeline for `GMOS` spectroscopic data
 
 
+### Requirements
+
+The best way to install all the requirements (for both `IRAF` and `Python`) is to follow the instructions on the [Gemini website](http://www.gemini.edu/node/12665). Note that IRAF/PyRAF require `Python 2.7` rather than the generally recommended `Python 3.x`. 
+
 ## Installation
 
 Download the latest (stable) version from this repository. Then run:
@@ -26,33 +30,19 @@ or to the `~/.cshrc`, etc, if you're not using `bash`:
 
 and restart the console.
 
-## Contains:
+## To run:
 
-#### Main code
+First, make sure you activate the `conda` environment (let's assume it's called `gemini`):
 
-  * `pygmos`               -- the code itself
- 
-#### Auxiliary
-  
-  * `align.cl`              -- align spectra by wavelength
-  * `check_gswave`          -- compares the corrected arc lines with the given ones to estimate dispersion
-  * `CuAr-GMOS.dat`         -- set of CuAr lamp emission lines for wavelength calibration
-  * `inventory.py`          -- identifies the fits files corresponding to each object
-  * `lacos_spec.cl`         -- cosmic ray removal software written by Pieter van Dokkum (distributed with permission)
-  * `README.md`             -- this file
+    source activate gemini
 
-## To run, type:
+This should be done every time a new shell session is started. After this, the code is ready to do its magic:
 
     pygmos <object> [options]
 
-For further help, go [here](http://www.astro.princeton.edu/~sifon/pygmos/help.html)
+To see available options, type
 
-## Python requirements:
-    numpy, http://numpy.scipy.org/
-    PyFITS, http://www.stsci.edu/resources/software_hardware/pyfits
-    PyRAF, http://www.stsci.edu/resources/software_hardware/pyraf
-
-All of these are best installed through [Astroconda](http://astroconda.readthedocs.io/en/latest/).
+    pygmos -h
 
 ----
 
@@ -62,13 +52,13 @@ The pipeline takes the object name given in the command line and finds
 all data associated with that object. It bias-subtracts all images and
 calibrates the science image with the flat field. It then does the
 wavelength calibration, removes cosmic rays using L.A.Cosmic (van
-Dokkum, 2001, PASP, 113, 1420) and sky subtracts the spectra. After
-this, the individual exposures are added. Finally, the 1d spectra are
-extracted.
+Dokkum, 2001, PASP, 113, 1420; distributed with permission) and sky
+subtracts the spectra. After this, the individual exposures are added.
+Finally, the 1d spectra are extracted.
 
 **Data format taken by pygmos:**
 
-Usual GMOS FITS files, which means two exposures per object, each of
+Usual GMOS FITS files, which means a set of exposures per object, each of
 which is composed of a science image, a flat field and a calibration
 arc.
 
@@ -117,4 +107,4 @@ arc.
  
  (c) Cristóbal Sifón
  
- Last updated March 2012.
+ Last updated October 2017.
