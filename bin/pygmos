@@ -30,7 +30,8 @@ pygmos_path = os.path.dirname(os.path.split(
 os.environ['pygmos_path'] = pygmos_path
 
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
-iraf.task(lacos_spec=os.path.join(pygmos_path,'lacos_spec.cl'))
+iraf.task(lacos_spec=os.path.join(
+    pygmos_path, 'pygmos', 'lacos_spec.cl'))
 
 
 def main():
@@ -77,9 +78,9 @@ def main():
     if args.align:
         iraf.task(align=os.path.join(pygmos_path, 'align.cl'))
 
-    assoc = '{0}.assoc'.format(cluster)
+    assoc = '{0}.assoc'.format(args.objectid)
     waves = getWavelengths(assoc)
-    print('\nObject:', cluster)
+    print('\nObject:', args.objectid)
 
     if args.nod:
         print('Reducing Nod-and-Shuffle observations. Remember that the')
@@ -88,13 +89,12 @@ def main():
     if args.masks == 'longslit':
         gmos.gsreduce.mdfdir = 'gmos$data'
         gmos.gsflat.mdfdir = 'gmos$data'
-        reduction.longslit(cluster, waves, assoc, ns=nod)
+        reduction.longslit(args, waves, assoc)
     else:
         for mask in masks:
             scienceFiles = utils.getScienceFiles(assoc, mask)
             reduction.mos(
-                cluster, mask, scienceFiles, assoc, cutdir, align,
-                align_suffix, ns=nod)
+                args, mask, scienceFiles, assoc, cutdir, align, align_suffix)
     return
 
 

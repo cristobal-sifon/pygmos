@@ -6,14 +6,15 @@ from pyraf import iraf
 from . import check_gswave, tasks, utils
 
 
-def longslit(args, cluster, waves, assoc):
+def longslit(args, waves, assoc):
     """
     Reduce longslit data
 
     """
     combine = []
     mask = 'longslit'
-    path = os.path.join(cluster.replace(' ', '_'), mask)
+    path = os.path.join(args.objectid.replace(' ', '_'), mask)
+
     for wave in waves:
         flat = utils.getFile(assoc, mask=mask, obs='flat', wave=wave)
         # finding the flat is enough to know that the mask exists.
@@ -34,24 +35,23 @@ def longslit(args, cluster, waves, assoc):
             tasks.Call_gdisplay(science, 1)
             combine.append(tasks.Call_gsskysub(science))
             if len(combine) == len(waves):
-                added = tasks.Call_imcombine(cluster, str(mask), combine)
+                added = tasks.Call_imcombine(args.objectid, str(mask), combine)
                 tasks.Call_gdisplay(added, 1)
 
-        spectra = tasks.Call_gsextract(cluster, mask)
+        spectra = tasks.Call_gsextract(args.objectid, mask)
         Naps = raw_input('Number of apertures extracted: ')
         # In case you don't see the message after so many
         # consecutive "Enters"
         while Naps == '':
             Naps = raw_input('Please enter number of apertures extracted: ')
         Naps = int(Naps)
-        tasks.Cut_apertures(cluster, Naps)
+        tasks.Cut_apertures(args.objectid, Naps)
         delete('tmp*')
         iraf.chdir('../..')
     return
 
 
-def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
-        align_suffix='_aligned'):
+def mos(args, mask, scienceFiles, assoc, cutdir, align_suffix='_aligned'):
     """
     The reduction process for MOS data. It goes through file identification,
     calibration and extraction of spectra.
@@ -60,7 +60,7 @@ def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
-    path = os.path.join(cluster, 'mask{0}'.format(mask))
+    path = os.path.join(args.objectid, 'mask{0}'.format(mask))
 
     for science in scienceFiles.keys():
         flat = utils.getFile(
@@ -76,7 +76,7 @@ def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
         arc = utils.getFile(
             assoc, science, mask=int(mask), obs='arc',
             wave=scienceFiles[science])
-        utils.Copy_MDF(science, cluster, str(mask))
+        utils.Copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
 
         flat, comb = tasks.Call_gsflat(flat)
@@ -104,9 +104,9 @@ def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
             combine.append(science)
         # once we've reduced all individual images
         if len(combine) == len(scienceFiles.keys()):
-            added = tasks.Call_imcombine(cluster, str(mask), combine, Nslits)
+            added = tasks.Call_imcombine(args.objectid, str(mask), combine, Nslits)
             tasks.Call_gdisplay(added, 1)
-            spectra = tasks.Call_gsextract(cluster, str(mask))
+            spectra = tasks.Call_gsextract(args.objectid, str(mask))
             if args.align:
                 aligned = tasks.Call_align(added, align, Nslits)
                 tasks.Call_gdisplay(aligned, 1)
@@ -114,10 +114,10 @@ def mos(args, cluster, mask, scienceFiles, assoc, cutdir,
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.Cut_spectra(cluster, str(mask), cutdir=cutdir, spec='2d')
-    tasks.Cut_spectra(cluster, str(mask), cutdir=cutdir, spec='1d')
+    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='2d')
+    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='1d')
     check_gswave.main(
-        cluster, mask, gmos.gswavelength.logfile, 'gswcheck.log')
+        args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks
 
 
@@ -127,7 +127,7 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
-    path = os.path.join(cluster, 'mask{0}'.format(mask))
+    path = os.path.join(args.objectid, 'mask{0}'.format(mask))
 
     darks = utils.getDarks()
     for science in scienceFiles.keys():
@@ -143,7 +143,7 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
         Nmasks += 1 / len(scienceFiles.keys())
         #arc = getFile(assoc, science, mask = int(mask), obs = 'arc',
                         #wave = scienceFiles[science])
-        utils.Copy_MDF(science, cluster, str(mask))
+        utils.Copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
 
         dark = tasks.Call_gbias(
@@ -194,10 +194,10 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.Cut_spectra(cluster, str(mask), cutdir=cutdir, spec='2d')
-    tasks.Cut_spectra(cluster, str(mask), cutdir=cutdir, spec='1d')
+    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='2d')
+    tasks.Cut_spectra(args.objectid, str(mask), cutdir=cutdir, spec='1d')
     check_gswave.main(
-        cluster, mask, gmos.gswavelength.logfile, 'gswcheck.log')
+        args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks
 
 
