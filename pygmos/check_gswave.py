@@ -166,7 +166,7 @@ def ManualCheck(lines, verbose=False):
         if l[0] != '#':
             l = l.split()
             skylines.append(float(l[0]))
-  
+
     diff = []
     for line in lines:
         diff.append(100)
@@ -177,12 +177,12 @@ def ManualCheck(lines, verbose=False):
 
     med = numpy.median(diff)
     std = numpy.std(diff)
-    rms = std / len(diff)**0.5
+    mean_err = std / len(diff)**0.5
     if verbose:
         print(diff)
-    print('med = {0:.2f};\tstd = {1:.2f};\trms = {2:.2f} ({3} lines)'.format(
-            med, std, rms, len(lines)))
-    return med, std, rms
+    print('med = {0:.3f} +/- {2:.3f};\tstd = {1:.2f};\t ({3} lines)'.format(
+            med, std, mean_err, len(lines)))
+    return med, std, mean_err
 
 
 if __name__ == '__main__':
