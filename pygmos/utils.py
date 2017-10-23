@@ -41,6 +41,7 @@ intro = """
 
 
 def getScienceFiles(assocfile, mask):
+    mask = str(mask)
     file = open(assocfile)
     head = '#'
     while head[0] == '#':
