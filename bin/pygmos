@@ -40,9 +40,9 @@ def main():
     number(s) of the mask(s) wanted.
 
     """
-    print(utils.intro)
-
     args = paramtools.read_args()
+
+    print(utils.intro)
 
     # Default value if nothing was specified in the console
     if args.masks == 'all':
