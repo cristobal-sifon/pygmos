@@ -17,7 +17,7 @@ def dump_file(infile):
     Adapted from
     https://docs.python.org/3/library/argparse.html#action and
     https://goo.gl/BWfK5Y
-    
+
     """
     class DumpFile(argparse.Action):
         def __call__(self, parser, args, outfile, option_string=None):
@@ -101,10 +101,12 @@ def parse_args():
              ' one')
 
     # dump files
-    add('-d', dest='dump', nargs='?', default=None,
+    add('-d', dest='dump_file', nargs='?', default=None,
+        help='Dump a sample parameter file to the console or to a file',
         action=dump_file(join(environ['pygmos_path'], 'docs',
                               'pygmos.params')))
-    add('-dd', dest='dump', nargs='?', default=None,
+    add('-dd', dest='dump_file_extended', nargs='?', default=None,
+        help='Dump an extended parameter file to the console or to a file',
         action=dump_file(join(environ['pygmos_path'],
                               'docs', 'pygmos.params.extended')))
 
