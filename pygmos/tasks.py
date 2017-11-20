@@ -28,14 +28,16 @@ def Call_gsflat(flat, fl_over='no', fl_inter='no', fl_answer='no'):
     gmos.gsflat(flat, output, combflat=comb, fl_over=fl_over,
                 fl_inter=fl_inter, fl_answer=fl_answer)
     if gmos.gsflat.fl_detec == 'yes':
-        os.system('rm {0}{1}.fits'.format(gmos.gmosaic.outpref, output))
-        os.system('rm {0}{1}.fits'.format(gmos.gmosaic.outpref, comb))
+        new_output = utils.add_prefix(output, gmos.gmosaic)
+        new_comb = utils.add_prefix(comb, gmos.gmosaic)
+        os.system('rm {0}.fits'.format(new_output))
+        os.system('rm {0}.fits'.format(new_comb))
         gmos.gmosaic(
             output, fl_fixpix='yes', verbose='no', logfile='gmosaic.log')
         gmos.gmosaic(
             comb, fl_fixpix='yes', verbose='no', logfile='gmosaic.log')
-        output = gmos.gmosaic.outpref + output
-        comb = gmos.gmosaic.outpref + comb
+        output = new_output
+        comb = new_comb
     return output, comb
 
 
@@ -56,7 +58,7 @@ def Call_gsreduce(args, img, flat='', grad='', mode='regular'):
         gmos.gsreduce(img, fl_fixpix='no', fl_trim='no', fl_bias='no',
                       fl_flat='no', fl_gsappwave='no', fl_cut='no',
                       fl_title='no', geointer='nearest')
-    return gmos.gsreduce.outpref + img
+    return utils.add_prefix(img, gmos.gsreduce)
 
 
 def Call_lacos(args, science, Nslits=0, longslit=False):
