@@ -64,6 +64,7 @@ def mos(cluster, program, bias, path='./', verbose=True):
     masks = []
     exp = []
     ls = glob(os.path.join(path, '*.fits*'))
+    print('Found {0} FITS files'.format(len(ls)))
     for filename in ls:
         head = getheader(filename)
         try:
@@ -124,10 +125,9 @@ def mos(cluster, program, bias, path='./', verbose=True):
                     exp[i][6] = info[j][0]
 
     # did we find the object?
-    try:
-        Ncols = len(exp[0])
-    except IndexError:
-        raise ValueError('Object {0} not found'.format(cluster))
+    msg = 'object {0} not found. Make sure you have defined the path' \
+          ' correctly (type `pygmos -h` for help).'.format(cluster)
+    assert len(exp) > 0, msg
 
     out = open('{0}.assoc'.format(cluster_path), 'w')
     head = 'ObservationID\t\tMask\tWave\t Time\t\tScience\t\tFlat\t\tArc'
