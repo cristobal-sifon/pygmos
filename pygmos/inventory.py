@@ -149,7 +149,8 @@ def mos(cluster, program, bias, path='./', verbose=True):
         os.system('ln -sf ../../' + science + '* .')
         os.system('ln -sf ../../' + flat + '* .')
         os.system('ln -sf ../../' + arc + '* .')
-        os.system('ln -sf ../../' + bias + '* .')
+        if bias:
+            os.system('ln -sf ../../' + bias + '* .')
         os.chdir('../../')
 
     # To return all individual masks:
@@ -231,7 +232,8 @@ def longslit(cluster, program, bias, path='./', verbose=True):
         os.system('ln -sf ../../' + science + ' .')
         os.system('ln -sf ../../' + flat + ' .')
         os.system('ln -sf ../../' + arc + ' .')
-        os.system('ln -sf ../../' + bias + '.fits* .')
+        if bias:
+            os.system('ln -sf ../../' + bias + '.fits* .')
         os.chdir('../../')
     return
 
