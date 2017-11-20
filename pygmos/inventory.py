@@ -67,22 +67,30 @@ def mos(cluster, program, bias, path='./', verbose=True):
     print('Found {0} FITS files'.format(len(ls)))
     for filename in ls:
         head = getheader(filename)
-        try:
-            if head['MASKNAME'] != 'None':
-                if head['OBJECT'].replace(' ', '_') == cluster \
-                        and head['OBSCLASS'] == 'science':
-                    if (program != '' and program == head['GEMPRGID']) \
-                            or program == '':
-                        obsid = head['OBSID']
-                        wave = head['CENTWAVE']
-                        exptime = int(head['EXPTIME'])
-                        mask = int(head['MASKNAME'][-2:])
-                        if [obsid, mask, wave, exptime] not in exp:
-                            if mask not in masks:
-                                masks.append(mask)
-                            exp.append([obsid, mask, wave, exptime])
-        except KeyError:
-            pass
+        # is this a Gemini observation?
+        if 'GEMPRGID' not in head:
+            continue
+        # is it from the right observing program?
+        if program and program != head['GEMPRGID']:
+            continue
+        # is it a spectroscopic observation?
+        if 'MASKNAME' not in head or head['MASKNAME'] == 'None':
+            continue
+        # is it the right observing class?
+        if head['OBSCLASS'] != 'science':
+            continue
+        # is it the right object?
+        if (head['OBJECT'].replace(' ', '_') == cluster:
+            obsid = head['OBSID']
+            wave = head['CENTWAVE']
+            exptime = int(head['EXPTIME'])
+            mask = int(head['MASKNAME'][-2:])
+            if [obsid, mask, wave, exptime] not in exp:
+                if mask not in masks:
+                    masks.append(mask)
+                exp.append([obsid, mask, wave, exptime])
+        else:
+            print('wrong object')
     Nexp = len(exp)
 
     for mask in masks:
