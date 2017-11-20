@@ -31,7 +31,7 @@ def dump_file(infile):
 
 
 def read_iraf_params(args):
-    """Read IRAF task parameters from IRAF parameter file"""
+    """Read and set IRAF task parameters from IRAF parameter file"""
     with open(args.paramfile) as pfile:
         for line in pfile:
             if line[0] == '@':
