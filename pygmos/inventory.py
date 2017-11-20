@@ -89,8 +89,6 @@ def mos(cluster, program, bias, path='./', verbose=True):
                 if mask not in masks:
                     masks.append(mask)
                 exp.append([obsid, mask, wave, exptime])
-        else:
-            print('wrong object')
     Nexp = len(exp)
 
     for mask in masks:
