@@ -45,7 +45,7 @@ def main():
 
     print(utils.intro)
 
-    run_inventory()
+    masks = run_inventory(args)
     if args.inventory_only:
         print()
         return
