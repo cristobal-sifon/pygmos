@@ -9,6 +9,9 @@ try:
 except ImportError:
     import pyfits
 
+if sys.version_info[0] == 3:
+    basestring = str
+
 
 intro = """
 
@@ -38,6 +41,12 @@ intro = """
 ------------------------------------------------------------------------
 
 """
+
+def add_prefix(filename, task):
+    filename = files
+    tree = filename.split('/')
+    tree[-1] = task.outpref + tree[-1]
+    return os.path.join(*tree)
 
 
 def getScienceFiles(assocfile, mask):
