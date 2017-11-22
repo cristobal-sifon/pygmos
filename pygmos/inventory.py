@@ -16,15 +16,14 @@ def generate(program, cluster, bias, path='./', masktype='mos', verbose=True):
         print('#-' * 20 + '#')
         print(' Making inventory for object', cluster)
         print('#-' * 20 + '#\n')
-    if masktype.lower() == 'mos':
-        masks = mos(cluster, program, bias, path)
-    elif masktype.lower() == 'longslit':
-        longslit(cluster, program, bias, path)
-    else:
-        msg = 'Unknown mask type. Enter either "mos" (default) or' \
-              ' "longslit". Exiting inventory.\n'
-        print(msg)
-        sys.exit()
+    assert masktype.lower() in ('longslit','mos'), \
+        'Unknown mask type. Enter either "mos" (default) or' \
+        ' "longslit". Exiting inventory.\n'
+    masks = assoc(cluster, program, masktype, bias, path)
+    #if masktype.lower() == 'mos':
+        #masks = mos(cluster, program, bias, path)
+    #elif masktype.lower() == 'longslit':
+        #longslit(cluster, program, bias, path)
 
     if verbose:
         print()
@@ -59,12 +58,11 @@ def read(cluster, bias, col=1):
     return masks
 
 
-def mos(cluster, program, bias, path='./', verbose=True):
+def find_masks(files, cluster, program, masktype, bias):
+    """Identify available masks and wavelength configurations"""
     masks = []
     exp = []
-    ls = glob(os.path.join(path, '*.fits*'))
-    print('Found {0} FITS files'.format(len(ls)))
-    for filename in ls:
+    for filename in files:
         head = getheader(filename)
         # is this a Gemini observation?
         if 'GEMPRGID' not in head:
@@ -83,19 +81,26 @@ def mos(cluster, program, bias, path='./', verbose=True):
             obsid = head['OBSID']
             wave = head['CENTWAVE']
             exptime = int(head['EXPTIME'])
-            mask = int(head['MASKNAME'][-2:])
+            if masktype == 'mos':
+                mask = int(head['MASKNAME'][-2:])
+                newdir = 'mask{0}'.format(mask)
+            else:
+                mask = head['MASKNAME']
+                newdir = mask
             if [obsid, mask, wave, exptime] not in exp:
                 if mask not in masks:
-                    newdir = os.path.join(cluster, 'mask' + str(mask))
+                    newdir = os.path.join(cluster, newdir)
                     makedir(newdir)
                     masks.append(mask)
                 exp.append([obsid, mask, wave, exptime])
-    Nexp = len(exp)
+    return exp, masks
 
-    # all of this has to be separate from the previous loop
-    # because we need to first identify the masks
+
+def find_exposures(files, exp):
+    Nexp = len(exp)
+    """Identify files corresponding to each mask"""
     info = []
-    for filename in ls:
+    for filename in files:
         head = getheader(filename)
         try:
             for i in range(Nexp):
@@ -112,15 +117,13 @@ def mos(cluster, program, bias, path='./', verbose=True):
                     pass
         except KeyError:
             pass
-    Nfiles = len(info)
-
+    # this is where the filenames will be stored
     for i in range(Nexp):
         for j in range(3):
             exp[i].append('')
-
     # only takes one flat and one arc per mask+wavelength for now.
     for i in range(Nexp):
-        for j in range(Nfiles):
+        for j in range(len(info)):
             if exp[i][0] == info[j][1] and exp[i][2] == info[j][4]:
                 if info[j][3] == 'OBJECT':
                     exp[i][4] = info[j][0]
@@ -128,19 +131,33 @@ def mos(cluster, program, bias, path='./', verbose=True):
                     exp[i][5] = info[j][0]
                 if info[j][3] == 'ARC':
                     exp[i][6] = info[j][0]
+    return exp
 
+
+def assoc(cluster, program, masktype, bias, path='./', verbose=True):
+    masktype = masktype.lower()
+    files = sorted(glob(os.path.join(path, '*.fits*')))
+    print('Found {0} FITS files in {1}'.format(len(files), path))
+    exp, masks = find_masks(files, cluster, program, masktype, bias)
+    exp = find_exposures(files, exp)
     # did we find the object?
     msg = 'object {0} not found. Make sure you have defined the path' \
           ' correctly (type `pygmos -h` for help).'.format(cluster)
     assert len(exp) > 0, msg
+    # print file information to file
+    print_assoc(cluster, exp, bias, verbose=verbose)
+    return masks
 
-    out = open('{0}.assoc'.format(cluster), 'w')
+
+def print_assoc(cluster, exp, bias, verbose=True):
+    output = '{0}.assoc'.format(cluster)
+    out = open(output, 'w')
     head = 'ObservationID\t\tMask\tWave\t Time\t\tScience\t\tFlat\t\tArc'
     print(head, file=out)
     if verbose:
         print(head)
 
-    for i in range(Nexp):
+    for i in range(len(exp)):
         msg = '{0}  \t{1:2d}\t{2}\t{3:5d}\t\t{4}\t{5}\t{6}'.format(
                 exp[i][0], exp[i][1], int(10*exp[i][2]),
                 exp[i][3], exp[i][4], exp[i][5], exp[i][6])
@@ -157,8 +174,7 @@ def mos(cluster, program, bias, path='./', verbose=True):
         if bias:
             os.system('ln -sf ../../' + bias + '* .')
         os.chdir('../../')
-
-    return masks
+    return output
 
 
 def longslit(cluster, program, bias, path='./', verbose=True):
