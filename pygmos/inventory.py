@@ -11,54 +11,52 @@ except ImportError:
     from pyfits import getheader
 
 
-def generate(program, cluster, bias, path='./', masktype='mos', verbose=True):
+def assoc(cluster, program, bias, path='./', verbose=True):
+    files = sorted(glob(os.path.join(path, '*.fits*')))
+    print('Found {0} FITS files in {1}'.format(len(files), path))
+    exp, masks = find_masks(files, cluster, program, bias)
+    exp = find_exposures(files, exp)
+    # did we find the object?
+    msg = 'object {0} not found. Make sure you have defined the path' \
+          ' correctly (type `pygmos -h` for help).'.format(cluster)
+    assert len(exp) > 0, msg
+    # print file information to file
+    print_assoc(cluster, exp, bias, verbose=verbose)
+    return masks
+
+
+def generate(program, cluster, bias, path='./', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
         print(' Making inventory for object', cluster)
         print('#-' * 20 + '#\n')
-    assert masktype.lower() in ('longslit','mos'), \
-        'Unknown mask type. Enter either "mos" (default) or' \
-        ' "longslit". Exiting inventory.\n'
-    masks = assoc(cluster, program, masktype, bias, path)
-    #if masktype.lower() == 'mos':
-        #masks = mos(cluster, program, bias, path)
-    #elif masktype.lower() == 'longslit':
-        #longslit(cluster, program, bias, path)
-
+    masks = assoc(cluster, program, bias, path)
     if verbose:
         print()
         print('#-' * 20 + '#')
         print(' Inventory ready. Look for "{0}.assoc"'.format(cluster))
         print('#-' * 20 + '#')
-    if masktype == 'mos':
-        return masks
-    return
-
-
-def read(cluster, bias, col=1):
-    file = open('{0}.assoc'.format(cluster))
-    # the column number shouldn't change, but just in case.
-    masks = []
-    # this seems rather unnecessary
-    while file.readline()[0] == '#':
-        pass
-    for line in file:
-        if line[0] != '#':
-            line = line.split()
-            m = int(line[col])
-            if m not in masks:
-                makedir(os.path.join(cluster, 'mask{0}'.format(m)))
-                masks.append(m)
-            os.chdir(os.path.join(cluster, 'mask{0}'.format(m)))
-            os.system('ln -sf ../../{0}* .'.format(bias))
-            for i in range(4, 7):
-                os.system('ln -sf ../../{0}.fits* .'.format(line[i]))
-            os.chdir('../..')
-    file.close()
     return masks
 
 
-def find_masks(files, cluster, program, masktype, bias):
+def read(cluster, bias, col=1):
+    masks = []
+    with open('{0}.assoc'.format(cluster)) as f:
+        line = f.readline()
+        if line[0] == '#':
+            line = line.split()
+            m = int(line[col])
+            if m not in masks:
+                masks.append(m)
+                #os.chdir(os.path.join(cluster, 'mask{0}'.format(m)))
+                #os.system('ln -sf ../../{0}* .'.format(bias))
+            #for i in range(4, 7):
+                #os.system('ln -sf ../../{0}.fits* .'.format(line[i]))
+        #os.chdir('../..')
+    return masks
+
+
+def find_masks(files, cluster, program, bias):
     """Identify available masks and wavelength configurations"""
     masks = []
     exp = []
@@ -81,12 +79,12 @@ def find_masks(files, cluster, program, masktype, bias):
             obsid = head['OBSID']
             wave = head['CENTWAVE']
             exptime = int(head['EXPTIME'])
-            if masktype == 'mos':
-                mask = int(head['MASKNAME'][-2:])
-                newdir = 'mask{0}'.format(mask)
-            else:
+            if 'arcsec' in head['MASKNAME']:
                 mask = head['MASKNAME']
                 newdir = mask
+            elif head['MASKNAME'][:2] in ('GN','GS'):
+                mask = int(head['MASKNAME'][-2:])
+                newdir = 'mask{0}'.format(mask)
             if [obsid, mask, wave, exptime] not in exp:
                 if mask not in masks:
                     newdir = os.path.join(cluster, newdir)
@@ -104,6 +102,7 @@ def find_exposures(files, exp):
         head = getheader(filename)
         try:
             for i in range(Nexp):
+                # the int(maskname) here works for MOS only
                 try:
                     if float(head['CENTWAVE']) == exp[i][2] and \
                             int(head['MASKNAME'][-2:]) == exp[i][1]:
@@ -134,21 +133,6 @@ def find_exposures(files, exp):
     return exp
 
 
-def assoc(cluster, program, masktype, bias, path='./', verbose=True):
-    masktype = masktype.lower()
-    files = sorted(glob(os.path.join(path, '*.fits*')))
-    print('Found {0} FITS files in {1}'.format(len(files), path))
-    exp, masks = find_masks(files, cluster, program, masktype, bias)
-    exp = find_exposures(files, exp)
-    # did we find the object?
-    msg = 'object {0} not found. Make sure you have defined the path' \
-          ' correctly (type `pygmos -h` for help).'.format(cluster)
-    assert len(exp) > 0, msg
-    # print file information to file
-    print_assoc(cluster, exp, bias, verbose=verbose)
-    return masks
-
-
 def print_assoc(cluster, exp, bias, verbose=True):
     output = '{0}.assoc'.format(cluster)
     out = open(output, 'w')
@@ -177,115 +161,11 @@ def print_assoc(cluster, exp, bias, verbose=True):
     return output
 
 
-def longslit(cluster, program, bias, path='./', verbose=True):
-    exp = []
-    ls = glob(os.path.join(path, '*.fits'))
-    for filename in ls:
-        head = getheader(filename)
-        try:
-            if head['OBJECT'].replace(' ', '_') == cluster \
-                    and head['OBSCLASS'] == 'science':
-                if (program != '' and program == head['GEMPRGID']) \
-                        or program == '':
-                    obsid = head['OBSID']
-                    wave = head['CENTWAVE']
-                    exptime = head['EXPTIME']
-                    mask = head['MASKNAME']
-                    exp.append([obsid, mask, wave, exptime])
-        except KeyError:
-            pass
-    Nexp = len(exp)
-    makedir(os.path.join(cluster, 'longslit'))
-
-    info = []
-    for filename in ls:
-        head = getheader(filename)
-        try:
-            for i in range(Nexp):
-                if head['OBSID'] == exp[i][0] \
-                        and head['CENTWAVE'] == exp[i][2]:
-                    obsID = exp[i][0]
-                    info.append([filename[:-5], obsID, exp[i][1],
-                                head['OBSTYPE'], exp[i][2]])
-        except KeyError:
-            pass
-    Nfiles = len(info)
-
-    for i in range(Nexp):
-        for j in range(3):
-            exp[i].append('')
-
-    for i in range(Nexp):
-        for j in range(Nfiles):
-            if exp[i][0] == info[j][1] and exp[i][2] == info[j][4]:
-                if info[j][3] == 'OBJECT':
-                    exp[i][4] = info[j][0]
-                if info[j][3] == 'FLAT':
-                    exp[i][5] = info[j][0]
-                if info[j][3] == 'ARC':
-                    exp[i][6] = info[j][0]
-
-    out = open('{0}.assoc'.format(cluster), 'w')
-    head = 'ObservationID\t\tMask\t\tWave\t Time\t\tScience\t\tFlat\t\tArc'
-    print(head, file=out)
-    if verbose:
-        print(head)
-    Ncols = len(exp[0])
-    for i in range(Nexp):
-        msg = '{0}  \t{1:2d}\t{2}\t{3:5d}\t\t{4}\t{5}\t{6}'.format(
-                exp[i][0], exp[i][1], int(10*exp[i][2]),
-                exp[i][3], exp[i][4], exp[i][5], exp[i][6])
-        print(msg, file=out)
-        if verbose:
-            print(msg)
-        science = exp[i][4] + '.fits'
-        flat = exp[i][5] + '.fits'
-        arc = exp[i][6] + '.fits'
-        try:
-            os.chdir(os.path.join(cluster, exp[i][1]))
-        except OSError:
-            os.chdir(os.path.join(cluster, 'longslit'))
-        os.system('ln -sf ../../' + science + ' .')
-        os.system('ln -sf ../../' + flat + ' .')
-        os.system('ln -sf ../../' + arc + ' .')
-        if bias:
-            os.system('ln -sf ../../' + bias + '.fits* .')
-        os.chdir('../../')
-    return
-
 
 def makedir(name):
-    dirs = name.split('/')
-    pathback = ''
-    for folder in dirs:
-        try:
-            os.mkdir(folder)
-        except OSError:
-            pass
-        os.chdir(folder)
-        pathback += '../'
-    os.chdir(pathback)
+    if not os.path.isdir(name):
+        os.makedirs(name)
     return
-
-
-if __name__ == '__main__':
-    program = ''
-    cluster = ''
-    mask = 'mos'
-    verb = True
-    if '=' not in sys.argv[1]:
-        cluster = sys.argv[1].replace('?', ' ')
-    for argv in sys.argv:
-        if argv[0:7] == 'object=':
-            cluster = argv[7:].replace('?', ' ')
-        if argv[0:9] == 'program=':
-            program = argv[9:]
-        if argv == 'mask=longslit' or argv == 'mask=long':
-            mask = 'longslit'
-        if argv[0:8] == 'verbose=':
-            if argv[8:9] == 'F' or argv[8:9].lower() == 'n':
-                verb = False
-    main(program, cluster, masktype = mask, verbose=verb)
 
 
 
