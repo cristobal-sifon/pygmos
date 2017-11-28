@@ -96,24 +96,18 @@ def find_exposures(files, exp):
     info = []
     for filename in files:
         head = getheader(filename)
-        try:
+        # is this a Gemini observation?
+        if 'CENTWAVE' in head and 'MASKNAME' in head and 'OBSTYPE' in head:
             for i in range(Nexp):
-                # the int(maskname) here works for MOS only
-                try:
-                    #if float(head['CENTWAVE']) == exp[i][2] and \
-                            #int(head['MASKNAME'][-2:]) == exp[i][1]:
-                    if float(head['CENTWAVE']) == exp[i][2] \
-                            and head['MASKNAME'] == exp[i][1]:
-                        obsID = exp[i][0]
-                        wave  = exp[i][2]
-                        mask  = exp[i][1]
-                        info.append(
-                            [filename[:filename.index('.fits')],
-                             obsID, mask, head['OBSTYPE'], wave])
-                except ValueError:
-                    pass
-        except KeyError:
-            pass
+               if float(head['CENTWAVE']) == exp[i][2] \
+                        and head['MASKNAME'] == exp[i][1]:
+                    obsID = exp[i][0]
+                    wave  = exp[i][2]
+                    mask  = exp[i][1]
+                    info.append(
+                        [os.path.split(filename[:filename.index('.fits')])[1],
+                         obsID, mask, head['OBSTYPE'], wave])
+
     # this is where the filenames will be stored
     for i in range(Nexp):
         for j in range(3):
@@ -135,7 +129,7 @@ def print_assoc(cluster, exp, bias, verbose=True):
     output = '{0}.assoc'.format(cluster)
     out = open(output, 'w')
     head = '{0:<16s}  {1:<14s}  {2:<5s}  {3:<5s}' \
-           '  {4:<25s}  {5:<25s}  {6:<25s}'.format(
+           '  {4:<14s}  {5:<14s}  {6:<14s}'.format(
                'ObservationID', 'Mask', 'Wave', 'Time', 'Science', 'Flat',
                'Arc')
     print(head, file=out)
@@ -143,8 +137,8 @@ def print_assoc(cluster, exp, bias, verbose=True):
         print(head)
 
     for i in range(len(exp)):
-        msg = '{0}  {1:<14s}  {2:5d}  {3:5d}  {4:<25s}  {5:<25s}' \
-              '  {6:<25s}'.format(
+        msg = '{0}  {1:<14s}  {2:5d}  {3:5d}  {4:<14s}  {5:<14s}' \
+              '  {6:<14s}'.format(
                 exp[i][0], exp[i][1], int(10*exp[i][2]),
                 exp[i][3], exp[i][4], exp[i][5], exp[i][6])
         print(msg, file=out)
