@@ -25,11 +25,13 @@ def assoc(cluster, program, bias, path='./', verbose=True):
     return masks
 
 
-def generate(program, cluster, bias, path='./', verbose=True):
+def generate(args, program, cluster, bias, path='./', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
         print(' Making inventory for object', cluster)
         print('#-' * 20 + '#\n')
+    # will fix later
+    bias = args.bias
     masks = assoc(cluster, program, bias, path)
     if verbose:
         print()
@@ -105,7 +107,7 @@ def find_exposures(files, exp):
                     wave  = exp[i][2]
                     mask  = exp[i][1]
                     info.append(
-                        [os.path.split(filename[:filename.index('.fits')])[1],
+                        [filename[:filename.index('.fits')],
                          obsID, mask, head['OBSTYPE'], wave])
 
     # this is where the filenames will be stored
@@ -140,7 +142,8 @@ def print_assoc(cluster, exp, bias, verbose=True):
         msg = '{0}  {1:<14s}  {2:5d}  {3:5d}  {4:<14s}  {5:<14s}' \
               '  {6:<14s}'.format(
                 exp[i][0], exp[i][1], int(10*exp[i][2]),
-                exp[i][3], exp[i][4], exp[i][5], exp[i][6])
+                exp[i][3], exp[i][4].split('/')[-1],
+                exp[i][5].split('/')[-1], exp[i][6].split('/')[-1])
         print(msg, file=out)
         if verbose:
             print(msg)
