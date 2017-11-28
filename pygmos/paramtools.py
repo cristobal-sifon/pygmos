@@ -5,8 +5,7 @@ import sys
 from os import environ
 from os.path import abspath, dirname, join, split
 from pyraf import iraf
-#from iraf import gemini
-#from iraf import gmos
+
 
 
 def dump_file(infile):
@@ -88,8 +87,7 @@ def parse_args():
     add('--no-ds9', dest='ds9', action='store_false',
         help='Do not start a ds9 session to display files as they are' \
              ' created')
-    add('-p', '--param-file', dest='paramfile',
-        default=join(environ['pygmos_path'], 'pygmos.param'),
+    add('-p', '--param-file', dest='paramfile', default='pygmos.param',
         help='File containing IRAF parameter definitions')
     add('--path', dest='path', default='./',
         help='path to raw GMOS files')
