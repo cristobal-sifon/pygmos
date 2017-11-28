@@ -2,18 +2,18 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from glob import glob
 import os
 import sys
 try:
     from astropy.io.fits import getheader
 except ImportError:
     from pyfits import getheader
+from glob import glob
 
 
 def assoc(cluster, program, bias, path='./', verbose=True):
     files = sorted(glob(os.path.join(path, '*.fits*')))
-    print('Found {0} FITS files in {1}'.format(len(files), path))
+    print('Found {0} FITS files in {1}\n'.format(len(files), path))
     exp, masks = find_masks(files, cluster, program, bias)
     exp = find_exposures(files, exp)
     # did we find the object?
@@ -79,12 +79,8 @@ def find_masks(files, cluster, program, bias):
             obsid = head['OBSID']
             wave = head['CENTWAVE']
             exptime = int(head['EXPTIME'])
-            if 'arcsec' in head['MASKNAME']:
-                mask = head['MASKNAME']
-                newdir = mask
-            elif head['MASKNAME'][:2] in ('GN','GS'):
-                mask = int(head['MASKNAME'][-2:])
-                newdir = 'mask{0}'.format(mask)
+            mask = head['MASKNAME']
+            newdir = mask
             if [obsid, mask, wave, exptime] not in exp:
                 if mask not in masks:
                     newdir = os.path.join(cluster, newdir)
@@ -104,8 +100,10 @@ def find_exposures(files, exp):
             for i in range(Nexp):
                 # the int(maskname) here works for MOS only
                 try:
-                    if float(head['CENTWAVE']) == exp[i][2] and \
-                            int(head['MASKNAME'][-2:]) == exp[i][1]:
+                    #if float(head['CENTWAVE']) == exp[i][2] and \
+                            #int(head['MASKNAME'][-2:]) == exp[i][1]:
+                    if float(head['CENTWAVE']) == exp[i][2] \
+                            and head['MASKNAME'] == exp[i][1]:
                         obsID = exp[i][0]
                         wave  = exp[i][2]
                         mask  = exp[i][1]
@@ -136,13 +134,17 @@ def find_exposures(files, exp):
 def print_assoc(cluster, exp, bias, verbose=True):
     output = '{0}.assoc'.format(cluster)
     out = open(output, 'w')
-    head = 'ObservationID\t\tMask\tWave\t Time\t\tScience\t\tFlat\t\tArc'
+    head = '{0:<16s}  {1:<14s}  {2:<5s}  {3:<5s}' \
+           '  {4:<25s}  {5:<25s}  {6:<25s}'.format(
+               'ObservationID', 'Mask', 'Wave', 'Time', 'Science', 'Flat',
+               'Arc')
     print(head, file=out)
     if verbose:
         print(head)
 
     for i in range(len(exp)):
-        msg = '{0}  \t{1:2d}\t{2}\t{3:5d}\t\t{4}\t{5}\t{6}'.format(
+        msg = '{0}  {1:<14s}  {2:5d}  {3:5d}  {4:<25s}  {5:<25s}' \
+              '  {6:<25s}'.format(
                 exp[i][0], exp[i][1], int(10*exp[i][2]),
                 exp[i][3], exp[i][4], exp[i][5], exp[i][6])
         print(msg, file=out)
@@ -151,12 +153,16 @@ def print_assoc(cluster, exp, bias, verbose=True):
         science = exp[i][4] + '.fits'
         flat = exp[i][5] + '.fits'
         arc = exp[i][6] + '.fits'
-        os.chdir(os.path.join(cluster, 'mask{0}'.format(exp[i][1])))
-        os.system('ln -sf ../../' + science + '* .')
-        os.system('ln -sf ../../' + flat + '* .')
-        os.system('ln -sf ../../' + arc + '* .')
+        # just for clarity
+        mask = exp[i][1]
+        os.chdir(os.path.join(cluster, mask))
+        # copy MOS mask definition file
+        if mask[:2] in ('GN', 'GS'):
+            os.system('ln -sf ../../{0}.fits .'.format(mask))
+        for file in (science, flat, arc):
+            os.system('ln -sf ../../{0}* .'.format(file))
         if bias:
-            os.system('ln -sf ../../' + bias + '* .')
+            os.system('ln -sf ../../{0}* .'.format(bias))
         os.chdir('../../')
     return output
 
