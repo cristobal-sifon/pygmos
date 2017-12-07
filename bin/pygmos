@@ -46,7 +46,7 @@ def main():
     print(utils.intro)
 
     masks = inventory.run(args)
-    if args.inventory_only:
+    if args.inventory_only or args.objectid == 'search':
         print()
         return
 
@@ -82,30 +82,6 @@ def main():
             science = utils.get_science_files(assoc, mask)
             reduction.mos(args, mask, science, assoc)
     return
-
-
-def run_inventory(args):
-    # Default value if nothing was specified in the console
-    if args.masks == 'all':
-        if args.read_inventory:
-            masks = sorted(
-                inventory.read(args.objectid, gmos.gsreduce.bias))
-        else:
-            masks = sorted(inventory.generate(
-                args, '', args.objectid, gmos.gsreduce.bias, args.path))
-        args.masks = [str(m) for m in masks]
-    elif args.masks == 'longslit':
-        inventory.generate(
-            args, args.program, args.objectid, gmos.gsreduce.bias, args.path,
-            masktype=args.masks)
-    # when MOS masks are specified
-    else:
-        if args.read_inventory:
-            inventory.read(args.objectid, gmos.gsreduce.bias)
-        else:
-            inventory.generate(args, args.program, args.objectid, args.path,
-            gmos.gsreduce.bias)
-    return masks
 
 
 if __name__ == '__main__':

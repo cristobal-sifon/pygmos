@@ -13,22 +13,27 @@ from glob import glob
 from . import utils
 
 
-def assoc(cluster, program, bias, path='./', verbose=True):
+def assoc(target, program, bias, path='./', verbose=True):
     files = sorted(glob(os.path.join(path, '*.fits*')))
     print('Found {0} FITS files in {1}\n'.format(len(files), path))
-    exp, masks = find_masks(files, cluster, program, bias)
+    exp, masks = find_masks(files, target, program, bias)
     exp = find_exposures(files, exp)
     # did we find the object?
     msg = 'object {0} not found. Make sure you have defined the path' \
-          ' correctly (type `pygmos -h` for help).'.format(cluster)
+          ' correctly (type `pygmos -h` for help).'.format(target)
     assert len(exp) > 0, msg
     # print file information to file
-    print_assoc(cluster, exp, bias, verbose=verbose)
+    print_assoc(target, exp, bias, verbose=verbose)
     return masks
 
 
-def find_masks(files, cluster, program, bias):
+def find_masks(files, target, program, bias):
     """Identify available masks and wavelength configurations"""
+    # auxiliary
+    if target == 'search':
+        search_targets = True
+    else:
+        search_targets = False
     masks = []
     exp = []
     for filename in files:
@@ -46,7 +51,7 @@ def find_masks(files, cluster, program, bias):
         if head['OBSCLASS'] != 'science':
             continue
         # finally, is it the right object?
-        if head['OBJECT'].replace(' ', '_') == cluster:
+        if head['OBJECT'].replace(' ', '_') == target:
             obsid = head['OBSID']
             wave = head['CENTWAVE']
             exptime = int(head['EXPTIME'])
@@ -54,7 +59,7 @@ def find_masks(files, cluster, program, bias):
             newdir = mask
             if [obsid, mask, wave, exptime] not in exp:
                 if mask not in masks:
-                    newdir = os.path.join(cluster, newdir)
+                    newdir = os.path.join(target, newdir)
                     utils.makedir(newdir)
                     masks.append(mask)
                 exp.append([obsid, mask, wave, exptime])
@@ -96,70 +101,24 @@ def find_exposures(files, exp):
     return exp
 
 
-def generate(args, program, cluster, bias, path='./', verbose=True):
+def generate(args, program, target, bias, path='./', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
-        print(' Making inventory for object', cluster)
+        print(' Making inventory for object', target)
         print('#-' * 20 + '#\n')
     # will fix later
     bias = args.bias
-    masks = assoc(cluster, program, bias, path)
+    masks = assoc(target, program, bias, path)
     if verbose:
         print()
         print('#-' * 20 + '#')
-        print(' Inventory ready. Look for "{0}.assoc"'.format(cluster))
+        print(' Inventory ready. Look for "{0}.assoc"'.format(target))
         print('#-' * 20 + '#')
     return masks
 
 
-def read(cluster, bias, col=1):
-    masks = []
-    with open('{0}.assoc'.format(cluster)) as f:
-        for line in f:
-            print(line)
-            if line[0] == '#' or line[:13] == 'ObservationID':
-                continue
-            line = line.split()
-            if len(line) == 0:
-                continue
-            print(line[col])
-            if line[col] not in masks:
-                masks.append(line[col])
-                print('masks:', masks)
-                #os.chdir(os.path.join(cluster, 'mask{0}'.format(m)))
-                #os.system('ln -sf ../../{0}* .'.format(bias))
-            #for i in range(4, 7):
-                #os.system('ln -sf ../../{0}.fits* .'.format(line[i]))
-        #os.chdir('../..')
-    return masks
-
-
-def run(args):
-    # Default value if nothing was specified in the console
-    if args.masks == 'all':
-        if args.read_inventory:
-            masks = sorted(
-                inventory.read(args.objectid, gmos.gsreduce.bias))
-        else:
-            masks = sorted(inventory.generate(
-                args, '', args.objectid, gmos.gsreduce.bias, args.path))
-        args.masks = [str(m) for m in masks]
-    elif args.masks == 'longslit':
-        inventory.generate(
-            args, args.program, args.objectid, gmos.gsreduce.bias, args.path,
-            masktype=args.masks)
-    # when MOS masks are specified
-    else:
-        if args.read_inventory:
-            inventory.read(args.objectid, gmos.gsreduce.bias)
-        else:
-            inventory.generate(args, args.program, args.objectid, args.path,
-            gmos.gsreduce.bias)
-    return masks
-
-
-def print_assoc(cluster, exp, bias, verbose=True):
-    output = '{0}.assoc'.format(cluster)
+def print_assoc(target, exp, bias, verbose=True):
+    output = '{0}.assoc'.format(target)
     out = open(output, 'w')
     head = '{0:<16s}  {1:<14s}  {2:<5s}  {3:<5s}' \
            '  {4:<14s}  {5:<14s}  {6:<14s}'.format(
@@ -183,7 +142,7 @@ def print_assoc(cluster, exp, bias, verbose=True):
         arc = exp[i][6] + '.fits'
         # just for clarity
         mask = exp[i][1]
-        os.chdir(os.path.join(cluster, mask))
+        os.chdir(os.path.join(target, mask))
         # copy MOS mask definition file
         if mask[:2] in ('GN', 'GS'):
             os.system('ln -sf ../../{0}.fits .'.format(mask))
@@ -194,3 +153,53 @@ def print_assoc(cluster, exp, bias, verbose=True):
         os.chdir('../../')
     return output
 
+
+def read(target, bias, col=1):
+    masks = []
+    with open('{0}.assoc'.format(target)) as f:
+        for line in f:
+            print(line)
+            if line[0] == '#' or line[:13] == 'ObservationID':
+                continue
+            line = line.split()
+            if len(line) == 0:
+                continue
+            print(line[col])
+            if line[col] not in masks:
+                masks.append(line[col])
+                print('masks:', masks)
+    return masks
+
+
+
+def run(args):
+    """Main inventory routine.
+
+    """
+    # Default value if nothing was specified in the console
+    if args.masks == 'all':
+        if args.read_inventory:
+            masks = sorted(
+                inventory.read(args.objectid, gmos.gsreduce.bias))
+        else:
+            masks = sorted(inventory.generate(
+                args, '', args.objectid, gmos.gsreduce.bias, args.path))
+        args.masks = [str(m) for m in masks]
+    elif args.masks == 'longslit':
+        inventory.generate(
+            args, args.program, args.objectid, gmos.gsreduce.bias, args.path,
+            masktype=args.masks)
+    # when MOS masks are specified
+    else:
+        if args.read_inventory:
+            inventory.read(args.objectid, gmos.gsreduce.bias)
+        else:
+            inventory.generate(args, args.program, args.objectid, args.path,
+            gmos.gsreduce.bias)
+    return masks
+
+
+def search_objects(args):
+    """
+    Search for all available objects
+    """
