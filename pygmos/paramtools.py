@@ -41,7 +41,7 @@ def read_iraf_params(args):
                 line = line.split()
                 if len(line) > 2 and line[2] != '#':
                     param = line[2].replace(
-                        'pygmos$', '{0}/'.format(environ['pygmos_path'])))
+                        'pygmos$', '{0}/'.format(environ['pygmos_path']))
                 else:
                     param = ''
                 task.setParam(line[0], param)

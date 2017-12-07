@@ -10,6 +10,10 @@ except ImportError:
     from pyfits import getheader
 from glob import glob
 
+from pyraf import iraf
+from iraf import gemini
+from iraf import gmos
+
 from . import utils
 
 
@@ -17,13 +21,14 @@ def assoc(target, program, bias, path='./', verbose=True):
     files = sorted(glob(os.path.join(path, '*.fits*')))
     print('Found {0} FITS files in {1}\n'.format(len(files), path))
     exp, masks = find_masks(files, target, program, bias)
-    exp = find_exposures(files, exp)
     # did we find the object?
     msg = 'object {0} not found. Make sure you have defined the path' \
           ' correctly (type `pygmos -h` for help).'.format(target)
-    assert len(exp) > 0, msg
-    # print file information to file
-    print_assoc(target, exp, bias, verbose=verbose)
+    assert len(exp.keys()) > 0, msg
+    for obj in exp:
+        exp[obj] = find_exposures(files, exp[obj])
+        # print file information to file
+        print_assoc(obj, exp[obj], bias, verbose=verbose)
     return masks
 
 
@@ -34,8 +39,8 @@ def find_masks(files, target, program, bias):
         search_targets = True
     else:
         search_targets = False
-    masks = []
-    exp = []
+    masks = {}
+    exp = {}
     for filename in files:
         head = getheader(filename)
         # is this a Gemini observation?
@@ -51,18 +56,22 @@ def find_masks(files, target, program, bias):
         if head['OBSCLASS'] != 'science':
             continue
         # finally, is it the right object?
-        if head['OBJECT'].replace(' ', '_') == target:
+        obj = head['OBJECT'].replace(' ', '_')
+        if target == 'search' or obj == target:
             obsid = head['OBSID']
             wave = head['CENTWAVE']
             exptime = int(head['EXPTIME'])
             mask = head['MASKNAME']
             newdir = mask
-            if [obsid, mask, wave, exptime] not in exp:
-                if mask not in masks:
-                    newdir = os.path.join(target, newdir)
+            if obj not in masks:
+                masks[obj] = []
+                exp[obj] = []
+            if [obsid, mask, wave, exptime] not in exp[obj]:
+                if mask not in masks[obj]:
+                    newdir = os.path.join(obj, newdir)
                     utils.makedir(newdir)
-                    masks.append(mask)
-                exp.append([obsid, mask, wave, exptime])
+                    masks[obj].append(mask)
+                exp[obj].append([obsid, mask, wave, exptime])
     return exp, masks
 
 
@@ -104,7 +113,10 @@ def find_exposures(files, exp):
 def generate(args, program, target, bias, path='./', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
-        print(' Making inventory for object', target)
+        if target == 'search':
+            print('Finding and inventorying all objects in {0}'.format(path))
+        else:
+            print(' Making inventory for object', target)
         print('#-' * 20 + '#\n')
     # will fix later
     bias = args.bias
@@ -112,13 +124,17 @@ def generate(args, program, target, bias, path='./', verbose=True):
     if verbose:
         print()
         print('#-' * 20 + '#')
-        print(' Inventory ready. Look for "{0}.assoc"'.format(target))
+        if target == 'search':
+            print('Inventory ready. Look for *.assoc files')
+        else:
+            print(' Inventory ready. Look for "{0}.assoc"'.format(target))
         print('#-' * 20 + '#')
     return masks
 
 
-def print_assoc(target, exp, bias, verbose=True):
-    output = '{0}.assoc'.format(target)
+def print_assoc(obj, exp, bias, verbose=True):
+    output = '{0}.assoc'.format(obj)
+    print('{0}\n-----'.format(output))
     out = open(output, 'w')
     head = '{0:<16s}  {1:<14s}  {2:<5s}  {3:<5s}' \
            '  {4:<14s}  {5:<14s}  {6:<14s}'.format(
@@ -142,7 +158,7 @@ def print_assoc(target, exp, bias, verbose=True):
         arc = exp[i][6] + '.fits'
         # just for clarity
         mask = exp[i][1]
-        os.chdir(os.path.join(target, mask))
+        os.chdir(os.path.join(obj, mask))
         # copy MOS mask definition file
         if mask[:2] in ('GN', 'GS'):
             os.system('ln -sf ../../{0}.fits .'.format(mask))
@@ -173,30 +189,27 @@ def read(target, bias, col=1):
 
 
 def run(args):
-    """Main inventory routine.
-
-    """
+    """Main inventory routine."""
     # Default value if nothing was specified in the console
     if args.masks == 'all':
         if args.read_inventory:
-            masks = sorted(
-                inventory.read(args.objectid, gmos.gsreduce.bias))
+            masks = sorted(read(args.objectid, gmos.gsreduce.bias))
         else:
-            masks = sorted(inventory.generate(
+            args.masks = sorted(generate(
                 args, '', args.objectid, gmos.gsreduce.bias, args.path))
-        args.masks = [str(m) for m in masks]
+        #args.masks = [str(m) for m in masks]
     elif args.masks == 'longslit':
-        inventory.generate(
-            args, args.program, args.objectid, gmos.gsreduce.bias, args.path,
-            masktype=args.masks)
+        args.masks = generate(
+            args, args.program, args.objectid, gmos.gsreduce.bias,
+            args.path, masktype=args.masks)
     # when MOS masks are specified
     else:
         if args.read_inventory:
-            inventory.read(args.objectid, gmos.gsreduce.bias)
+            read(args.objectid, gmos.gsreduce.bias)
         else:
-            inventory.generate(args, args.program, args.objectid, args.path,
-            gmos.gsreduce.bias)
-    return masks
+            generate(args, args.program, args.objectid, args.path,
+                     gmos.gsreduce.bias)
+    return args.masks
 
 
 def search_objects(args):
