@@ -40,12 +40,11 @@ def read_iraf_params(args):
                 line = line.replace('=', ' = ')
                 line = line.split()
                 if len(line) > 2 and line[2] != '#':
-                    task.setParam(
-                        line[0], line[2].replace(
-                            'pygmos$',
-                            '{0}/'.format(environ['pygmos_path'])))
+                    param = line[2].replace(
+                        'pygmos$', '{0}/'.format(environ['pygmos_path'])))
                 else:
-                    task.setParam(line[0], '')
+                    param = ''
+                task.setParam(line[0], param)
     return
 
 
@@ -74,6 +73,8 @@ def parse_args():
     add('--cut-dir', dest='cutdir', default='spectra',
         help='Directory into which the individual 1d spectra will be saved' \
              ' (if --no-cut has not been set)')
+    add('-b', '--bias', dest='bias', default='',
+        help='Bias file')
     add('-i', '--inventory', dest='inventory_only', action='store_true',
         help='Only run the inventory for a given object, without actually' \
              ' reducing the data')
@@ -84,6 +85,8 @@ def parse_args():
     add('-n', '--nod-shuffle', dest='nod', action='store_true',
         help='Set if reducing nod & shuffle observations' \
              ' (NOT YET IMPLEMENTED)')
+    add('--no-bias', dest='nobias', action='store_true',
+        help='Allow the pipeline to run without applying a bias correction')
     add('--no-ds9', dest='ds9', action='store_false',
         help='Do not start a ds9 session to display files as they are' \
              ' created')

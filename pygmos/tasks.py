@@ -14,19 +14,24 @@ from iraf import gmos
 from . import utils
 
 
-def Call_gdisplay(args, image, frame):
+def call_gdisplay(args, image, frame):
     if args.ds9:
         gmos.gdisplay(image, str(frame))
         print('Image', image, 'displayed in frame', frame)
     return
 
 
-def Call_gsflat(flat, fl_over='no', fl_inter='no', fl_answer='no'):
-    utils.RemovePreviousFiles(flat, filetype='flat')
+def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='no',
+                fl_inter='no', fl_answer='no'):
+    utils.remove_previous_files(flat, filetype='flat')
     output = '{0}_flat'.format(flat)
     comb = '{0}_comb'.format(flat)
-    gmos.gsflat(flat, output, combflat=comb, fl_over=fl_over,
-                fl_inter=fl_inter, fl_answer=fl_answer)
+    # for now
+    bias = args.bias
+    if args.nobias:
+        fl_bias = ('no' if bias == '' else 'yes')
+    gmos.gsflat(flat, output, combflat=comb, bias=bias, fl_bias=fl_bias,
+                fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer)
     if gmos.gsflat.fl_detec == 'yes':
         new_output = utils.add_prefix(output, gmos.gmosaic)
         new_comb = utils.add_prefix(comb, gmos.gmosaic)
@@ -41,18 +46,26 @@ def Call_gsflat(flat, fl_over='no', fl_inter='no', fl_answer='no'):
     return output, comb
 
 
-def Call_gsreduce(args, img, flat='', grad='', mode='regular'):
-    utils.RemovePreviousFiles(img)
+def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
+                  fl_bias='yes'):
+    utils.remove_previous_files(img)
+    # for now
+    bias = args.bias
+    if args.nobias:
+        fl_bias = ('no' if bias == '' else 'yes')
     if mode == 'regular':
         if flat:
-            gmos.gsreduce(img, gradimage=grad, flatim=flat)
+            gmos.gsreduce(
+                img, gradimage=grad, flatim=flat, bias=bias, fl_bias=fl_bias)
         # will happen when gsreducing the arcs and the first pass
         # of N&S science data
         else:
-            gmos.gsreduce(img, fl_flat='no', gradimage=grad)
+            gmos.gsreduce(
+                img, fl_flat='no', gradimage=grad, bias=bias, fl_bias=fl_bias)
     elif mode == 'ns1':
-        gmos.gsreduce(img, fl_over='no', fl_flat='no', fl_gmosaic='no',
-                      fl_gsappwave='no', fl_cut='no', fl_title='no')
+        gmos.gsreduce(
+            img, bias=bias, fl_over='no', fl_flat='no', fl_bias=fl_bias,
+            fl_gmosaic='no', fl_gsappwave='no', fl_cut='no', fl_title='no')
     elif mode == 'ns2':
         gmos.gsreduce.outpref = 'r'
         gmos.gsreduce(img, fl_fixpix='no', fl_trim='no', fl_bias='no',
@@ -61,7 +74,7 @@ def Call_gsreduce(args, img, flat='', grad='', mode='regular'):
     return utils.add_prefix(img, gmos.gsreduce)
 
 
-def Call_lacos(args, science, Nslits=0, longslit=False):
+def call_lacos(args, science, Nslits=0, longslit=False):
     print('-' * 30)
     print('Removing cosmic rays with LACos')
     head = pyfits.getheader(science + '.fits')
@@ -97,17 +110,17 @@ def Call_lacos(args, science, Nslits=0, longslit=False):
     return outfile[:-5]
 
 
-def Call_gswave(args, arc):
+def call_gswave(args, arc):
     print('-' * 30)
-    print('Calling gswavelength on', arc)
+    print('calling gswavelength on', arc)
     gmos.gswavelength(arc)
     print('-' * 30)
     return
 
 
-def Call_gstransform(args, image, arc):
+def call_gstransform(args, image, arc):
     print('-' * 30)
-    print('Calling gstransform')
+    print('calling gstransform')
     print('{0} -->'.format(image), end=' ')
     if image[-5:] == 'lacos':
         out = gmos.gstransform.outpref + image[:-6]
@@ -120,7 +133,7 @@ def Call_gstransform(args, image, arc):
     return out
 
 
-def Call_align(args, inimage, suffix, Nslits):
+def call_align(args, inimage, suffix, Nslits):
     print('-' * 30)
     print('Aligning spectra...')
     outimage = inimage + suffix
@@ -133,9 +146,9 @@ def Call_align(args, inimage, suffix, Nslits):
     return outimage
 
 
-def Call_gsskysub(args, tgsfile, align=''):
+def call_gsskysub(args, tgsfile, align=''):
     print('-' * 30)
-    print('Calling gsskysub')
+    print('calling gsskysub')
     print(' {0}{1} -->'.format(tgsfile, align, end=' '))
     out = gmos.gsskysub.outpref + tgsfile + align
     print(out)
@@ -145,9 +158,9 @@ def Call_gsskysub(args, tgsfile, align=''):
     return out
 
 
-def Call_gnsskysub(args, inimages):
+def call_gnsskysub(args, inimages):
     print('-' * 30)
-    print('Calling gnsskysub')
+    print('calling gnsskysub')
     print(' ', inimages, '-->', end=' ')
     out = gmos.gnsskysub.outpref + inimages
     print(out)
@@ -157,14 +170,14 @@ def Call_gnsskysub(args, inimages):
     return out
 
 
-def Call_gnscombine(args, cluster, inimages, outimage=''):
+def call_gnscombine(args, cluster, inimages, outimage=''):
     """
     INCOMPLETE
     """
     if not outimage:
         outimage = 'nsc-' + cluster
     print('-' * 30)
-    print('Calling gnscombine')
+    print('calling gnscombine')
     #write_offsets(inimages)
     print('0 0', file=open('offsets.dat', 'w'))
     print(' ', inimages, '-->', outimage)
@@ -177,7 +190,7 @@ def Call_gnscombine(args, cluster, inimages, outimage=''):
     return out
 
 
-def Call_imcombine(args, cluster, mask, im, Nslits=1):
+def call_imcombine(args, cluster, mask, im, Nslits=1):
     print('-' * 30)
     if mask == 'longslit':
         outimage = '{0}{1}{2}-{3}_ls'.format(
@@ -206,7 +219,7 @@ def Call_imcombine(args, cluster, mask, im, Nslits=1):
     return outimage
 
 
-def Call_gsextract(args, cluster, mask):
+def call_gsextract(args, cluster, mask):
     if mask == 'longslit':
         infile = '{0}{1}{2}-{3}_ls'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
@@ -216,7 +229,7 @@ def Call_gsextract(args, cluster, mask):
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, cluster.replace(' ', '_'), mask)
     print('-' * 30)
-    print('Calling gsextract')
+    print('calling gsextract')
     print(infile, '-->', end=' ')
     out = gmos.gsextract.outprefix + infile
     print(out)
@@ -248,7 +261,7 @@ def Cut_spectra(args, mask, spec='1d'):
     filename = os.path.join(
         args.objectid.replace(' ', '_'), 'mask{0}'.format(mask),
         '{0}-{1}_mask{2}'.format(prefix, obj, mask))
-    Nslits = utils.getNslits(filename)
+    Nslits = utils.get_nslits(filename)
     for i in range(1, Nslits + 1):
         if i < 10:
             #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \

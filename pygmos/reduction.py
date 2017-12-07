@@ -16,29 +16,29 @@ def longslit(args, waves, assoc):
     path = os.path.join(args.objectid.replace(' ', '_'), mask)
 
     for wave in waves:
-        flat = utils.getFile(assoc, mask=mask, obs='flat', wave=wave)
+        flat = utils.get_file(assoc, mask, obs='flat', wave=wave)
         # finding the flat is enough to know that the mask exists.
         if flat:
-            arc = utils.getFile(assoc, mask=mask, obs='arc', wave=wave)
-            science = utils.getFile(assoc, mask=mask, obs='science', wave=wave)
+            arc = utils.get_file(assoc, mask, obs='arc', wave=wave)
+            science = utils.get_file(assoc, mask, obs='science', wave=wave)
             iraf.chdir(path)
-            flat, comb = tasks.Call_gsflat(flat)
-            arc = tasks.Call_gsreduce(arc, flat, comb)
-            science = tasks.Call_gsreduce(science, flat, comb)
-            tasks.Call_gdisplay(args, science, 1)
-            science = tasks.Call_lacos(science, longslit=True)
-            tasks.Call_gdisplay(args, science, 1)
-            tasks.Call_gswave(arc)
-            tasks.Call_gstransform(arc, arc)
+            flat, comb = tasks.call_gsflat(args, flat)
+            arc = tasks.call_gsreduce(args, arc, flat, comb)
+            science = tasks.call_gsreduce(args, science, flat, comb)
+            tasks.call_gdisplay(args, science, 1)
+            science = tasks.call_lacos(science, longslit=True)
+            tasks.call_gdisplay(args, science, 1)
+            tasks.call_gswave(arc)
+            tasks.call_gstransform(arc, arc)
 
-            science = tasks.Call_gstransform(science, arc)
-            tasks.Call_gdisplay(args, science, 1)
-            combine.append(tasks.Call_gsskysub(science))
+            science = tasks.call_gstransform(science, arc)
+            tasks.call_gdisplay(args, science, 1)
+            combine.append(tasks.call_gsskysub(science))
             if len(combine) == len(waves):
-                added = tasks.Call_imcombine(args.objectid, str(mask), combine)
-                tasks.Call_gdisplay(args, added, 1)
+                added = tasks.call_imcombine(args.objectid, str(mask), combine)
+                tasks.call_gdisplay(args, added, 1)
 
-        spectra = tasks.Call_gsextract(args.objectid, mask)
+        spectra = tasks.call_gsextract(args.objectid, mask)
         Naps = raw_input('Number of apertures extracted: ')
         # In case you don't see the message after so many
         # consecutive "Enters"
@@ -51,69 +51,67 @@ def longslit(args, waves, assoc):
     return
 
 
-def mos(args, mask, scienceFiles, assoc, align_suffix='_aligned'):
+def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
     """
-    The reduction process for MOS data. It goes through file identification,
-    calibration and extraction of spectra.
+    The reduction process for MOS data. It goes through file
+    identification, calibration and extraction of spectra.
 
     """
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
-    path = os.path.join(args.objectid, 'mask{0}'.format(mask))
+    path = os.path.join(args.objectid, mask)
 
     # debugging - I don't think this should ever happen but hey
-    if not scienceFiles:
-        raise ValueError('Empty variable scienceFiles')
+    if not files_science:
+        raise ValueError('Empty variable `files_science`')
 
-    for science in scienceFiles.keys():
-        flat = utils.getFile(
-            assoc, science, mask=int(mask), obs='flat',
-            wave=scienceFiles[science])
+    for science in files_science:
+        flat = utils.get_file(
+            assoc, science, mask, obs='flat', wave=files_science[science])
         # finding the flat is enough to know that the mask exists.
         if not flat:
             print('Not enough data for mask {0} (science file {1})'.format(
                     mask, science))
             continue
         # all observations add up to 1
-        Nmasks += 1 / len(scienceFiles.keys())
-        arc = utils.getFile(
-            assoc, science, mask=int(mask), obs='arc',
-            wave=scienceFiles[science])
-        utils.Copy_MDF(science, args.objectid, str(mask))
+        Nmasks += 1 / len(files_science.keys())
+        arc = utils.get_file(
+            assoc, science, mask, obs='arc', wave=files_science[science])
+        #utils.copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
 
-        flat, comb = tasks.Call_gsflat(flat)
-        arc = tasks.Call_gsreduce(arc, flat, comb)
-        science = tasks.Call_gsreduce(science, flat, comb)
-        tasks.Call_gdisplay(args, science, 1)
-        Nslits = utils.getNslits(science)
-        science = tasks.Call_lacos(science, Nslits)
-        tasks.Call_gdisplay(args, science, 1)
-        tasks.Call_gswave(arc)
-        tasks.Call_gstransform(arc, arc)
+        flat, comb = tasks.call_gsflat(args, flat)
+        arc = tasks.call_gsreduce(args, arc, flat, comb)
+        science = tasks.call_gsreduce(args, science, flat, comb)
+        tasks.call_gdisplay(args, science, 1)
+        Nslits = utils.get_nslits(science)
+        science = tasks.call_lacos(science, Nslits)
+        tasks.call_gdisplay(args, science, 1)
+        tasks.call_gswave(arc)
+        tasks.call_gstransform(arc, arc)
         if args.align:
-            tasks.Call_align(arc, align, Nslits)
-        science = tasks.Call_gstransform(science, arc)
+            tasks.call_align(arc, align, Nslits)
+        science = tasks.call_gstransform(science, arc)
         if args.align:
-            tasks.Call_align(science, align_suffix, Nslits)
-            tasks.Call_gdisplay(args, science + align_suffix, 1)
-            science = tasks.Call_gsskysub(science, align_suffix)
-            tasks.Call_gdisplay(args, science, 1)
+            tasks.call_align(science, align_suffix, Nslits)
+            tasks.call_gdisplay(args, science + align_suffix, 1)
+            science = tasks.call_gsskysub(science, align_suffix)
+            tasks.call_gdisplay(args, science, 1)
             combine.append(science)
         else:
-            tasks.Call_gdisplay(args, science, 1)
-            science = tasks.Call_gsskysub(science, '')
-            tasks.Call_gdisplay(args. science, 1)
+            tasks.call_gdisplay(args, science, 1)
+            science = tasks.call_gsskysub(science, '')
+            tasks.call_gdisplay(args. science, 1)
             combine.append(science)
         # once we've reduced all individual images
-        if len(combine) == len(scienceFiles.keys()):
-            added = tasks.Call_imcombine(args.objectid, str(mask), combine, Nslits)
-            tasks.Call_gdisplay(args, added, 1)
-            spectra = tasks.Call_gsextract(args.objectid, str(mask))
+        if len(combine) == len(files_science.keys()):
+            added = tasks.call_imcombine(args.objectid, str(mask), combine, Nslits)
+            tasks.call_gdisplay(args, added, 1)
+            spectra = tasks.call_gsextract(args.objectid, str(mask))
             if args.align:
-                aligned = tasks.Call_align(added, align, Nslits)
-                tasks.Call_gdisplay(args, aligned, 1)
+                aligned = tasks.call_align(added, align, Nslits)
+                tasks.call_gdisplay(args, aligned, 1)
         delete('tmp*')
         iraf.chdir('../..')
 
@@ -125,7 +123,7 @@ def mos(args, mask, scienceFiles, assoc, align_suffix='_aligned'):
     return Nmasks
 
 
-def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
+def ns(args, cluster, mask, files_science, assoc, cutdir,
        align_suffix='_aligned'):
     """nod-and-shuffle -- NOT YET IMPLEMENTED"""
     Nmasks = 0
@@ -133,67 +131,66 @@ def ns(args, cluster, mask, scienceFiles, assoc, cutdir,
     print('Mask {0}'.format(mask), end=2*'\n')
     path = os.path.join(args.objectid, 'mask{0}'.format(mask))
 
-    darks = utils.getDarks()
-    for science in scienceFiles.keys():
-        arc = utils.getFile(
-            assoc, science, mask=int(mask), obs='arc',
-            wave=scienceFiles[science])
+    darks = utils.get_darks()
+    for science in files_science.keys():
+        arc = utils.get_file(
+            assoc, science, mask, obs='arc',
+            wave=files_science[science])
         # finding the arc is enough to know that the mask exists.
         if not arc:
             print('Not enough data for mask {2} (science file {1})'.format(
                     mask, science))
             continue
         # all observations sum to 1
-        Nmasks += 1 / len(scienceFiles.keys())
-        #arc = getFile(assoc, science, mask = int(mask), obs = 'arc',
-                        #wave = scienceFiles[science])
-        utils.Copy_MDF(science, args.objectid, str(mask))
+        Nmasks += 1 / len(files_science.keys())
+        #arc = get_file(assoc, science, mask, obs='arc',
+                        #wave=files_science[science])
+        utils.copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
 
-        dark = tasks.Call_gbias(
+        dark = tasks.call_gbias(
             darks, fl_over='no', fl_trim='yes', fl_vardq='no', fl_inter='no',
             median='no')
-        science = tasks.Call_gprepare(
+        science = tasks.call_gprepare(
             science, fl_vardq='no', fl_addmdf='yes')
-        science = tasks.Call_gireduce(
+        science = tasks.call_gireduce(
             science, bias=dark, fl_over='no', fl_trim='yes', fl_bias='yes',
             fl_dark='no', fl_flat='no', fl_addmdf='no')
-        sciwithsky = tasks.Call_gmosaic(
+        sciwithsky = tasks.call_gmosaic(
             science, fl_paste='no', geointer='linear', fl_fixpix='no',
             fl_clean='yes')
-        science = tasks.Call_gnsskysub(
+        science = tasks.call_gnsskysub(
             science, fl_paste='no', fl_fixpix='no', fl_clean='yes',
             fl_fixnc='no')
-        science = tasks.Call_gmosaic(
+        science = tasks.call_gmosaic(
             science, fl_paste='no', geointer='linear', fl_fixpix='no',
             fl_clean='yes')
         offsetfile = utils.write_offsets(inimages, 'offsets.dat')
         # SHOULD PROBABLY CREATE A BPM, see step 7 of Adam's notes
         # (skipping for now)
-        #science = tasks.Call_imcombine(science, 
-        
-        #flat, comb = tasks.Call_gsflat(flat, fl_over = 'yes',
-                                        #fl_inter = 'yes', fl_answer = 'yes')
-        #arc = tasks.Call_gsreduce(arc, '', comb)
-        #science = tasks.Call_gsreduce(science, '', comb, mode = 'ns1')
-        #tasks.Call_gdisplay(args, science, 1)
-        ##Nslits = utils.getNslits(science)
-        ##science = tasks.Call_lacos(science, Nslits)
-        #science = tasks.Call_gnsskysub(science)
-        #tasks.Call_gdisplay(args, science, 1)
-        #tasks.Call_gswave(arc)
-        #tasks.Call_gstransform(arc, arc)
-        #science = tasks.Call_gsreduce(science, flat, '', mode = 'ns2')
-        #science = tasks.Call_gstransform(science, arc)
-        ##science = tasks.Call_gsreduce(science, flat, '', bias = False)
+        #science = tasks.call_imcombine(science,
+        #flat, comb = tasks.call_gsflat(
+            #args, flat, fl_over='yes', fl_inter='yes', fl_answer='yes')
+        #arc = tasks.call_gsreduce(args, arc, '', comb)
+        #science = tasks.call_gsreduce(args, science, '', comb, mode = 'ns1')
+        #tasks.call_gdisplay(args, science, 1)
+        ##Nslits = utils.get_nslits(science)
+        ##science = tasks.call_lacos(science, Nslits)
+        #science = tasks.call_gnsskysub(science)
+        #tasks.call_gdisplay(args, science, 1)
+        #tasks.call_gswave(arc)
+        #tasks.call_gstransform(arc, arc)
+        #science = tasks.call_gsreduce(args, science, flat, '', mode = 'ns2')
+        #science = tasks.call_gstransform(science, arc)
+        ##science = tasks.call_gsreduce(args, science, flat, '', bias = False)
         ##if align:
-            ##tasks.Call_align(arc, align, Nslits)
-        ##science = tasks.Call_gstransform(science, arc)
+            ##tasks.call_align(arc, align, Nslits)
+        ##science = tasks.call_gstransform(science, arc)
         ##if align:
-            ##tasks.Call_align(science, align_suffix, Nslits)
-            ##tasks.Call_gdisplay(args, science + align_suffix, 1)
-            ##science = tasks.Call_gnscombine(science, align_suffix)
-        tasks.Call_gdisplay(args, science, 1)
+            ##tasks.call_align(science, align_suffix, Nslits)
+            ##tasks.call_gdisplay(args, science + align_suffix, 1)
+            ##science = tasks.call_gnscombine(science, align_suffix)
+        tasks.call_gdisplay(args, science, 1)
         delete('tmp*')
         iraf.chdir('../..')
 

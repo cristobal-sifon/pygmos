@@ -48,8 +48,7 @@ def add_prefix(filename, task):
     return os.path.join(*tree)
 
 
-def getScienceFiles(assocfile, mask):
-    mask = str(mask)
+def get_science_files(assocfile, mask):
     file = open(assocfile)
     head = '#'
     while head[0] == '#':
@@ -68,7 +67,7 @@ def getScienceFiles(assocfile, mask):
     return science
 
 
-def getDarks():
+def get_darks():
     darks = []
     for ls in glob('*.fits'):
         head = pyfits.getheader(ls)
@@ -77,7 +76,7 @@ def getDarks():
     return ','.join(darks)
 
 
-def getWavelengths(assocfile):
+def get_wavelengths(assocfile):
     file = open(assocfile)
     head = '#'
     while head[0] == '#':
@@ -94,7 +93,7 @@ def getWavelengths(assocfile):
     return waves
 
 
-def Copy_MDF(science, cluster, mask):
+def copy_MDF(science, cluster, mask):
     head = pyfits.open(science + '.fits')[0].header
     mdffile = head['MASKNAME']
     targetdir = cluster.replace(' ', '_') + '/mask' + mask + '/'
@@ -103,17 +102,14 @@ def Copy_MDF(science, cluster, mask):
     return
 
 
-def RemovePreviousFiles(name, filetype=''):
-    """Mainly for the flat files"""
-    delete('g{0}.fits'.format(name))
-    delete('gs{0}.fits'.format(name))
-    if filetype == 'flat':
-        delete('{0}_flat.fits'.format(name))
-        delete('{0}_comb.fits'.format(name))
+def delete(filename):
+    ls = glob(filename)
+    for filename in ls:
+        os.system('rm %s' %filename)
     return
 
 
-def getFile(assoc, science, mask=1, obs='science', wave=670):
+def get_file(assoc, science, mask=1, obs='science', wave=670):
     assocfile = open(assoc)
     while assocfile.readline()[0] == '#':
         pass
@@ -134,10 +130,7 @@ def getFile(assoc, science, mask=1, obs='science', wave=670):
                 else:
                     print('Unknown observation type in getFile(). Exiting')
                     sys.exit()
-        else:
-            if int(line[1]) == mask and \
-                    int(line[2]) == wave and \
-                    line[4] == science:
+        elif line[1] == mask and int(line[2]) == wave and line[4] == science:
                 if obs == 'science':
                     return line[4]
                 if obs == 'flat':
@@ -150,14 +143,14 @@ def getFile(assoc, science, mask=1, obs='science', wave=670):
     return
 
 
-def getNslits(filename):
+def get_nslits(filename):
     f = pyfits.open('{0}.fits'.format(filename))
     N =  len(f) - 2
     f.close()
     return N
 
 
-def getNstars(filename):
+def get_nstars(filename):
     fits = pyfits.open(filename + '.fits')
     data = fits[1].data
     N = 0
@@ -169,7 +162,13 @@ def getNstars(filename):
     return N
 
 
-def ReadKey(fitsfile, key):
+def makedir(name):
+    if not os.path.isdir(name):
+        os.makedirs(name)
+    return
+
+
+def read_key(fitsfile, key):
     head = pyfits.getheader(fitsfile + '.fits')
     try:
         value = head[key]
@@ -178,10 +177,13 @@ def ReadKey(fitsfile, key):
     return value
 
 
-def delete(filename):
-    ls = glob(filename)
-    for filename in ls:
-        os.system('rm %s' %filename)
+def remove_previous_files(name, filetype=''):
+    """Mainly for the flat files"""
+    delete('g{0}.fits'.format(name))
+    delete('gs{0}.fits'.format(name))
+    if filetype == 'flat':
+        delete('{0}_flat.fits'.format(name))
+        delete('{0}_comb.fits'.format(name))
     return
 
 
@@ -196,23 +198,6 @@ def removedir(dirname):
         os.system('rm *')
         os.chdir('..')
         os.rmdir(dirname)
-    return
-
-
-def makedir(dirname, overwrite='yes'):
-    dirs = dirname.split('/')
-    for i in range(len(dirs)):
-        try:
-            os.mkdir(dirs[i])
-        except OSError:
-            if overwrite == 'no':
-                pass
-        else:
-            os.system('rm -r ' + dirs[i])
-            os.mkdir(dirs[i])
-        os.chdir(dirs[i])
-    for i in range(len(dirs)):
-        os.chdir('../')
     return
 
 

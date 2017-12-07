@@ -10,6 +10,8 @@ except ImportError:
     from pyfits import getheader
 from glob import glob
 
+from . import utils
+
 
 def assoc(cluster, program, bias, path='./', verbose=True):
     files = sorted(glob(os.path.join(path, '*.fits*')))
@@ -22,39 +24,6 @@ def assoc(cluster, program, bias, path='./', verbose=True):
     assert len(exp) > 0, msg
     # print file information to file
     print_assoc(cluster, exp, bias, verbose=verbose)
-    return masks
-
-
-def generate(args, program, cluster, bias, path='./', verbose=True):
-    if verbose:
-        print('#-' * 20 + '#')
-        print(' Making inventory for object', cluster)
-        print('#-' * 20 + '#\n')
-    # will fix later
-    bias = args.bias
-    masks = assoc(cluster, program, bias, path)
-    if verbose:
-        print()
-        print('#-' * 20 + '#')
-        print(' Inventory ready. Look for "{0}.assoc"'.format(cluster))
-        print('#-' * 20 + '#')
-    return masks
-
-
-def read(cluster, bias, col=1):
-    masks = []
-    with open('{0}.assoc'.format(cluster)) as f:
-        line = f.readline()
-        if line[0] == '#':
-            line = line.split()
-            m = int(line[col])
-            if m not in masks:
-                masks.append(m)
-                #os.chdir(os.path.join(cluster, 'mask{0}'.format(m)))
-                #os.system('ln -sf ../../{0}* .'.format(bias))
-            #for i in range(4, 7):
-                #os.system('ln -sf ../../{0}.fits* .'.format(line[i]))
-        #os.chdir('../..')
     return masks
 
 
@@ -86,7 +55,7 @@ def find_masks(files, cluster, program, bias):
             if [obsid, mask, wave, exptime] not in exp:
                 if mask not in masks:
                     newdir = os.path.join(cluster, newdir)
-                    makedir(newdir)
+                    utils.makedir(newdir)
                     masks.append(mask)
                 exp.append([obsid, mask, wave, exptime])
     return exp, masks
@@ -127,6 +96,68 @@ def find_exposures(files, exp):
     return exp
 
 
+def generate(args, program, cluster, bias, path='./', verbose=True):
+    if verbose:
+        print('#-' * 20 + '#')
+        print(' Making inventory for object', cluster)
+        print('#-' * 20 + '#\n')
+    # will fix later
+    bias = args.bias
+    masks = assoc(cluster, program, bias, path)
+    if verbose:
+        print()
+        print('#-' * 20 + '#')
+        print(' Inventory ready. Look for "{0}.assoc"'.format(cluster))
+        print('#-' * 20 + '#')
+    return masks
+
+
+def read(cluster, bias, col=1):
+    masks = []
+    with open('{0}.assoc'.format(cluster)) as f:
+        for line in f:
+            print(line)
+            if line[0] == '#' or line[:13] == 'ObservationID':
+                continue
+            line = line.split()
+            if len(line) == 0:
+                continue
+            print(line[col])
+            if line[col] not in masks:
+                masks.append(line[col])
+                print('masks:', masks)
+                #os.chdir(os.path.join(cluster, 'mask{0}'.format(m)))
+                #os.system('ln -sf ../../{0}* .'.format(bias))
+            #for i in range(4, 7):
+                #os.system('ln -sf ../../{0}.fits* .'.format(line[i]))
+        #os.chdir('../..')
+    return masks
+
+
+def run(args):
+    # Default value if nothing was specified in the console
+    if args.masks == 'all':
+        if args.read_inventory:
+            masks = sorted(
+                inventory.read(args.objectid, gmos.gsreduce.bias))
+        else:
+            masks = sorted(inventory.generate(
+                args, '', args.objectid, gmos.gsreduce.bias, args.path))
+        args.masks = [str(m) for m in masks]
+    elif args.masks == 'longslit':
+        inventory.generate(
+            args, args.program, args.objectid, gmos.gsreduce.bias, args.path,
+            masktype=args.masks)
+    # when MOS masks are specified
+    else:
+        if args.read_inventory:
+            inventory.read(args.objectid, gmos.gsreduce.bias)
+        else:
+            inventory.generate(args, args.program, args.objectid, args.path,
+            gmos.gsreduce.bias)
+    return masks
+
+
 def print_assoc(cluster, exp, bias, verbose=True):
     output = '{0}.assoc'.format(cluster)
     out = open(output, 'w')
@@ -162,13 +193,4 @@ def print_assoc(cluster, exp, bias, verbose=True):
             os.system('ln -sf ../../{0}* .'.format(bias))
         os.chdir('../../')
     return output
-
-
-
-def makedir(name):
-    if not os.path.isdir(name):
-        os.makedirs(name)
-    return
-
-
 
