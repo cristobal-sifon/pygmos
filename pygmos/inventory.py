@@ -136,7 +136,7 @@ def print_assoc(obj, exp, bias, verbose=True):
     output = '{0}.assoc'.format(obj)
     print('{0}\n-----'.format(output))
     out = open(output, 'w')
-    head = '{0:<16s}  {1:<14s}  {2:<5s}  {3:<5s}' \
+    head = '{0:<16s}  {1:<15s}  {2:<5s}  {3:<5s}' \
            '  {4:<14s}  {5:<14s}  {6:<14s}'.format(
                'ObservationID', 'Mask', 'Wave', 'Time', 'Science', 'Flat',
                'Arc')
@@ -167,6 +167,8 @@ def print_assoc(obj, exp, bias, verbose=True):
         if bias:
             os.system('ln -sf ../../{0}* .'.format(bias))
         os.chdir('../../')
+    if verbose:
+        print()
     return output
 
 
@@ -183,7 +185,6 @@ def read(target, bias, col=1):
             print(line[col])
             if line[col] not in masks:
                 masks.append(line[col])
-                print('masks:', masks)
     return masks
 
 
@@ -193,13 +194,13 @@ def run(args):
     # Default value if nothing was specified in the console
     if args.masks == 'all':
         if args.read_inventory:
-            masks = sorted(read(args.objectid, gmos.gsreduce.bias))
+            masks = read(args.objectid, gmos.gsreduce.bias)
         else:
-            args.masks = sorted(generate(
-                args, '', args.objectid, gmos.gsreduce.bias, args.path))
+            masks = generate(
+                args, '', args.objectid, gmos.gsreduce.bias, args.path)
         #args.masks = [str(m) for m in masks]
     elif args.masks == 'longslit':
-        args.masks = generate(
+        masks = generate(
             args, args.program, args.objectid, gmos.gsreduce.bias,
             args.path, masktype=args.masks)
     # when MOS masks are specified
@@ -209,7 +210,7 @@ def run(args):
         else:
             generate(args, args.program, args.objectid, args.path,
                      gmos.gsreduce.bias)
-    return args.masks
+    return masks
 
 
 def search_objects(args):

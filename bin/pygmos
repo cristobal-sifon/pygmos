@@ -49,6 +49,7 @@ def main():
     if args.inventory_only or args.objectid == 'search':
         print()
         return
+    masks = masks[args.objectid]
 
     # after running the inventory, the bias has been linked to the
     # working directory. Again, this should be removed once issue #11
@@ -72,7 +73,6 @@ def main():
         print('Reducing Nod-and-Shuffle observations. Remember that the')
         print('bias image must be overscan subtracted (interactively).')
 
-    print(args.masks, masks)
     if args.masks == 'longslit':
         gmos.gsreduce.mdfdir = 'gmos$data'
         gmos.gsflat.mdfdir = 'gmos$data'

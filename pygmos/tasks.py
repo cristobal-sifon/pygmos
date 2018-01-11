@@ -21,7 +21,7 @@ def call_gdisplay(args, image, frame):
     return
 
 
-def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='no',
+def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
                 fl_inter='no', fl_answer='no'):
     utils.remove_previous_files(flat, filetype='flat')
     output = '{0}_flat'.format(flat)
@@ -47,7 +47,7 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='no',
 
 
 def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
-                  fl_bias='yes'):
+                  fl_bias='yes', fl_over='yes'):
     utils.remove_previous_files(img)
     # for now
     bias = args.bias
@@ -56,12 +56,14 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
     if mode == 'regular':
         if flat:
             gmos.gsreduce(
-                img, gradimage=grad, flatim=flat, bias=bias, fl_bias=fl_bias)
+                img, gradimage=grad, flatim=flat, bias=bias, fl_bias=fl_bias,
+                fl_over=fl_over)
         # will happen when gsreducing the arcs and the first pass
         # of N&S science data
         else:
             gmos.gsreduce(
-                img, fl_flat='no', gradimage=grad, bias=bias, fl_bias=fl_bias)
+                img, fl_flat='no', gradimage=grad, bias=bias, fl_bias=fl_bias,
+                fl_over=fl_over)
     elif mode == 'ns1':
         gmos.gsreduce(
             img, bias=bias, fl_over='no', fl_flat='no', fl_bias=fl_bias,

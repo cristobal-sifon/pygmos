@@ -63,6 +63,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
     path = os.path.join(args.objectid, mask)
 
     # debugging - I don't think this should ever happen but hey
+    print('files_science =', files_science)
     if not files_science:
         raise ValueError('Empty variable `files_science`')
 
@@ -85,7 +86,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         arc = tasks.call_gsreduce(args, arc, flat, comb)
         science = tasks.call_gsreduce(args, science, flat, comb)
         tasks.call_gdisplay(args, science, 1)
-        Nslits = utils.get_nslits(science)
+        Nslits = utils.get_nslits(os.path.join(path, science))
         science = tasks.call_lacos(science, Nslits)
         tasks.call_gdisplay(args, science, 1)
         tasks.call_gswave(arc)
