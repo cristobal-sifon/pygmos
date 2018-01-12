@@ -5,6 +5,7 @@ the order that they should be executed.
 """
 from __future__ import absolute_import, division, print_function
 
+from astropy.io import fits as pyfits
 import os
 from pyraf import iraf
 from iraf import gemini
@@ -112,7 +113,7 @@ def call_lacos(args, science, Nslits=0, longslit=False):
     return outfile[:-5]
 
 
-def call_gswave(args, arc):
+def call_gswave(arc):
     print('-' * 30)
     print('calling gswavelength on', arc)
     gmos.gswavelength(arc)
@@ -120,7 +121,7 @@ def call_gswave(args, arc):
     return
 
 
-def call_gstransform(args, image, arc):
+def call_gstransform(image, arc):
     print('-' * 30)
     print('calling gstransform')
     print('{0} -->'.format(image), end=' ')
@@ -135,7 +136,7 @@ def call_gstransform(args, image, arc):
     return out
 
 
-def call_align(args, inimage, suffix, Nslits):
+def call_align(inimage, suffix, Nslits):
     print('-' * 30)
     print('Aligning spectra...')
     outimage = inimage + suffix
