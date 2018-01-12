@@ -35,7 +35,7 @@ def assoc(target, program, bias, path='./', verbose=True):
 def find_masks(files, target, program, bias):
     """Identify available masks and wavelength configurations"""
     # auxiliary
-    if target == 'search':
+    if target == 'inventory':
         search_targets = True
     else:
         search_targets = False
@@ -57,7 +57,7 @@ def find_masks(files, target, program, bias):
             continue
         # finally, is it the right object?
         obj = head['OBJECT'].replace(' ', '_')
-        if target == 'search' or obj == target:
+        if target == 'inventory' or obj == target:
             obsid = head['OBSID']
             wave = head['CENTWAVE']
             exptime = int(head['EXPTIME'])
@@ -113,7 +113,7 @@ def find_exposures(files, exp):
 def generate(args, program, target, bias, path='./', verbose=True):
     if verbose:
         print('#-' * 20 + '#')
-        if target == 'search':
+        if target == 'inventory':
             print('Finding and inventorying all objects in {0}'.format(path))
         else:
             print(' Making inventory for object', target)
@@ -124,7 +124,7 @@ def generate(args, program, target, bias, path='./', verbose=True):
     if verbose:
         print()
         print('#-' * 20 + '#')
-        if target == 'search':
+        if target == 'inventory':
             print('Inventory ready. Look for *.assoc files')
         else:
             print(' Inventory ready. Look for "{0}.assoc"'.format(target))
@@ -190,29 +190,25 @@ def read(target, bias, col=1):
 
 def run(args):
     """Main inventory routine."""
-    # Default value if nothing was specified in the console
-    if args.masks == 'all':
-        if args.read_inventory:
-            masks = read(args.objectid, gmos.gsreduce.bias)
-        else:
-            masks = generate(
-                args, '', args.objectid, gmos.gsreduce.bias, args.path)
-        #args.masks = [str(m) for m in masks]
-    elif args.masks == 'longslit':
+    # longslit observations
+    if args.masks == 'longslit':
         masks = generate(
             args, args.program, args.objectid, gmos.gsreduce.bias,
             args.path, masktype=args.masks)
+
+    # just read masks from pre-existing assoc files
+    elif args.read_inventory:
+        masks = read(args.objectid, gmos.gsreduce.bias)
+
+    # all MOS masks
+    elif args.masks == 'all':
+        masks = generate(
+            args, '', args.objectid, gmos.gsreduce.bias, args.path)
+
     # when MOS masks are specified
     else:
-        if args.read_inventory:
-            read(args.objectid, gmos.gsreduce.bias)
-        else:
-            generate(args, args.program, args.objectid, gmos.gsreduce.bias, 
-                     args.path)
+        masks = generate(
+            args, args.program, args.objectid, gmos.gsreduce.bias, args.path)
+
     return masks
 
-
-def search_objects(args):
-    """
-    Search for all available objects
-    """
