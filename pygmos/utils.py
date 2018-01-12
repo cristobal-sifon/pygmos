@@ -105,7 +105,7 @@ def copy_MDF(science, cluster, mask):
 def delete(filename):
     ls = glob(filename)
     for filename in ls:
-        os.system('rm %s' %filename)
+        os.system('rm {0}'.format(filename))
     return
 
 
