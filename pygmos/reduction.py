@@ -26,7 +26,7 @@ def longslit(args, waves, assoc):
             arc = tasks.call_gsreduce(args, arc, flat, comb)
             science = tasks.call_gsreduce(args, science, flat, comb)
             tasks.call_gdisplay(args, science, 1)
-            science = tasks.call_lacos(science, longslit=True)
+            science = tasks.call_lacos(args, science, longslit=True)
             tasks.call_gdisplay(args, science, 1)
             tasks.call_gswave(arc)
             tasks.call_gstransform(arc, arc)
@@ -79,15 +79,14 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         Nmasks += 1 / len(files_science.keys())
         arc = utils.get_file(
             assoc, science, mask, obs='arc', wave=files_science[science])
-        #utils.copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
 
         flat, comb = tasks.call_gsflat(args, flat)
         arc = tasks.call_gsreduce(args, arc, flat, comb)
         science = tasks.call_gsreduce(args, science, flat, comb)
         tasks.call_gdisplay(args, science, 1)
-        Nslits = utils.get_nslits(os.path.join(path, science))
-        science = tasks.call_lacos(science, Nslits)
+        Nslits = utils.get_nslits(science)
+        science = tasks.call_lacos(args, science, Nslits)
         tasks.call_gdisplay(args, science, 1)
         tasks.call_gswave(arc)
         tasks.call_gstransform(arc, arc)
@@ -146,7 +145,7 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
         Nmasks += 1 / len(files_science.keys())
         #arc = get_file(assoc, science, mask, obs='arc',
                         #wave=files_science[science])
-        utils.copy_MDF(science, args.objectid, str(mask))
+        #utils.copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
 
         dark = tasks.call_gbias(
@@ -176,7 +175,7 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
         #science = tasks.call_gsreduce(args, science, '', comb, mode = 'ns1')
         #tasks.call_gdisplay(args, science, 1)
         ##Nslits = utils.get_nslits(science)
-        ##science = tasks.call_lacos(science, Nslits)
+        ##science = tasks.call_lacos(args, science, Nslits)
         #science = tasks.call_gnsskysub(science)
         #tasks.call_gdisplay(args, science, 1)
         #tasks.call_gswave(arc)
