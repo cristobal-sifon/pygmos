@@ -46,10 +46,9 @@ def main():
     print(utils.intro)
 
     masks = inventory.run(args)
-    if args.inventory_only or args.objectid == 'search':
+    if args.inventory_only or args.objectid == 'inventory':
         print()
         return
-    masks = masks[args.objectid]
 
     # after running the inventory, the bias has been linked to the
     # working directory. Again, this should be removed once issue #11

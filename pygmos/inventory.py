@@ -72,6 +72,10 @@ def find_masks(files, target, program, bias):
                     utils.makedir(newdir)
                     masks[obj].append(mask)
                 exp[obj].append([obsid, mask, wave, exptime])
+    # `masks` are no longer used within the inventory
+    # except to pass them to the main program for data reduction
+    if target != 'inventory':
+        masks = masks[target]
     return exp, masks
 
 
