@@ -188,7 +188,6 @@ def read(target, bias, col=1):
     return masks
 
 
-
 def run(args):
     """Main inventory routine."""
     # Default value if nothing was specified in the console
@@ -208,8 +207,8 @@ def run(args):
         if args.read_inventory:
             read(args.objectid, gmos.gsreduce.bias)
         else:
-            generate(args, args.program, args.objectid, args.path,
-                     gmos.gsreduce.bias)
+            generate(args, args.program, args.objectid, gmos.gsreduce.bias, 
+                     args.path)
     return masks
 
 
