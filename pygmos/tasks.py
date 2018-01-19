@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function
 
 from astropy.io import fits as pyfits
 import os
+from time import time
+
 from pyraf import iraf
 from iraf import gemini
 from iraf import gemtools
@@ -78,17 +80,18 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
 
 
 def call_lacos(args, science, Nslits=0, longslit=False):
+    print()
     print('-' * 30)
-    print('Removing cosmic rays with LACos')
+    print()
+    print('Removing cosmic rays with LACos ...')
+    to = time()
     head = pyfits.getheader(science + '.fits')
     gain = head['GAIN']
     rdnoise = head['RDNOISE']
     outfile = '{0}_lacos.fits'.format(science)
-
     utils.delete(outfile)
     os.system('cp  -p ' + science + '.fits ' +  outfile)
     utils.makedir('slits')
-
     if longslit:
         slit = '{0}[sci,1]'.format(science)
         outslit = os.path.join('slits' '{0}_long'.format(science))
@@ -97,20 +100,22 @@ def call_lacos(args, science, Nslits=0, longslit=False):
         iraf.imcopy(outslit, '{0}[SCI,1,overwrite]'.format(outfile[:-5]),
                     verbose='no')
     else:
-        for i in range(1, Nslits + 1):
-            j = str(i)
-            slit = science + '[sci,' + j + ']'
-            outslit = os.path.join('slits', '{0}_{1}'.format(science, j))
-            outmask = os.path.join('slits', '{0}_mask{1}'.format(science, j))
+        for i in xrange(1, Nslits+1):
+            slit = '{0}[sci,{1}]'.format(science, i)
+            outslit = os.path.join('slits', '{0}_{1}'.format(science, i))
+            outmask = os.path.join('slits', '{0}_mask{1}'.format(science, i))
             iraf.lacos_spec(slit, outslit, outmask, gain=gain, readn=rdnoise)
             iraf.imcopy(
-                outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], j),
+                outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], i),
                 verbose='no')
     utils.delete('lacos*')
     utils.removedir('slits')
     print(outfile[:-5])
+    print('Done in {0:.2f}'.format((time()-to)/60))
+    print()
     print('-' * 30)
     return outfile[:-5]
+    print()
 
 
 def call_gswave(arc):
@@ -149,19 +154,19 @@ def call_align(inimage, suffix, Nslits):
     return outimage
 
 
-def call_gsskysub(args, tgsfile, align=''):
+def call_gsskysub(tgsfile, align=''):
     print('-' * 30)
     print('calling gsskysub')
     print(' {0}{1} -->'.format(tgsfile, align, end=' '))
     out = gmos.gsskysub.outpref + tgsfile + align
     print(out)
-    delete('{0}.fits'.format(out))
+    utils.delete('{0}.fits'.format(out))
     gmos.gsskysub(tgsfile + align, output=out)
     print('-' * 30)
     return out
 
 
-def call_gnsskysub(args, inimages):
+def call_gnsskysub(inimages):
     print('-' * 30)
     print('calling gnsskysub')
     print(' ', inimages, '-->', end=' ')
@@ -173,7 +178,7 @@ def call_gnsskysub(args, inimages):
     return out
 
 
-def call_gnscombine(args, cluster, inimages, outimage=''):
+def call_gnscombine(cluster, inimages, outimage=''):
     """
     INCOMPLETE
     """
@@ -193,7 +198,7 @@ def call_gnscombine(args, cluster, inimages, outimage=''):
     return out
 
 
-def call_imcombine(args, cluster, mask, im, Nslits=1):
+def call_imcombine(cluster, mask, im, Nslits=1):
     print('-' * 30)
     if mask == 'longslit':
         outimage = '{0}{1}{2}-{3}_ls'.format(
@@ -222,7 +227,7 @@ def call_imcombine(args, cluster, mask, im, Nslits=1):
     return outimage
 
 
-def call_gsextract(args, cluster, mask):
+def call_gsextract(cluster, mask):
     if mask == 'longslit':
         infile = '{0}{1}{2}-{3}_ls'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
@@ -252,7 +257,7 @@ def Cut_spectra(args, mask, spec='1d'):
     """
     print('-' * 30)
     print('Cutting spectra...')
-    utils.makedir(args.cutdir, overwrite='no')
+    utils.makedir(args.cutdir)
     spectra = []
     obj = args.objectid.replace(' ', '_')
     if spec == '1d':

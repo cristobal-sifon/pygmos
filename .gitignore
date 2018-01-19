@@ -3,6 +3,7 @@
 *.log
 *.pyc
 *.save
+__pycache__
 build
 dist
 misc
