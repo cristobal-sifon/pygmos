@@ -67,7 +67,7 @@ def parse_args():
         help='Object name as given in the FITS file header. If the' \
              ' object name contains spaces, replace them by' \
              ' underscores ("_"). To search all available objects,' \
-             ' use "search" as the object name. This will run the' \
+             ' use "inventory" as the object name. This will run the' \
              ' inventory searching all available objects and exit.')
     # optional arguments
     add('--align', dest='align', action='store_true',
