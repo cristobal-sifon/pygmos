@@ -26,7 +26,7 @@ def longslit(args, waves, assoc):
             arc = tasks.call_gsreduce(args, arc, flat, comb)
             science = tasks.call_gsreduce(args, science, flat, comb)
             tasks.call_gdisplay(args, science, 1)
-            science = tasks.call_lacos(args, science, longslit=True)
+            science = tasks.call_lacos(science, longslit=True)
             tasks.call_gdisplay(args, science, 1)
             tasks.call_gswave(arc)
             tasks.call_gstransform(arc, arc)
@@ -35,7 +35,8 @@ def longslit(args, waves, assoc):
             tasks.call_gdisplay(args, science, 1)
             combine.append(tasks.call_gsskysub(science))
             if len(combine) == len(waves):
-                added = tasks.call_imcombine(args.objectid, str(mask), combine)
+                added = tasks.call_imcombine(
+                    args.objectid, str(mask), combine, longslit=True)
                 tasks.call_gdisplay(args, added, 1)
 
         spectra = tasks.call_gsextract(args.objectid, mask)
@@ -85,7 +86,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         science = tasks.call_gsreduce(args, science, flat, comb)
         tasks.call_gdisplay(args, science, 1)
         Nslits = utils.get_nslits(science)
-        science = tasks.call_lacos(args, science, Nslits)
+        science = tasks.call_lacos(science, Nslits)
         tasks.call_gdisplay(args, science, 1)
         tasks.call_gswave(arc)
         tasks.call_gstransform(arc, arc)
@@ -106,7 +107,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         # once we've reduced all individual images
         if len(combine) == len(files_science.keys()):
             added = tasks.call_imcombine(
-                args.objectid, str(mask), combine, Nslits)
+                args.objectid, mask, combine, Nslits)
             tasks.call_gdisplay(args, added, 1)
             spectra = tasks.call_gsextract(args.objectid, str(mask))
             if args.align:
@@ -175,7 +176,7 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
         #science = tasks.call_gsreduce(args, science, '', comb, mode = 'ns1')
         #tasks.call_gdisplay(args, science, 1)
         ##Nslits = utils.get_nslits(science)
-        ##science = tasks.call_lacos(args, science, Nslits)
+        ##science = tasks.call_lacos(science, Nslits)
         #science = tasks.call_gnsskysub(science)
         #tasks.call_gdisplay(args, science, 1)
         #tasks.call_gswave(arc)

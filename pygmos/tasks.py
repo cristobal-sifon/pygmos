@@ -79,7 +79,7 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
     return utils.add_prefix(img, gmos.gsreduce)
 
 
-def call_lacos(args, science, Nslits=0, longslit=False):
+def call_lacos(science, Nslits=0, longslit=False):
     print()
     print('-' * 30)
     print()
@@ -102,6 +102,7 @@ def call_lacos(args, science, Nslits=0, longslit=False):
     else:
         for i in xrange(1, Nslits+1):
             slit = '{0}[sci,{1}]'.format(science, i)
+            print('slit =', slit)
             outslit = os.path.join('slits', '{0}_{1}'.format(science, i))
             outmask = os.path.join('slits', '{0}_mask{1}'.format(science, i))
             iraf.lacos_spec(slit, outslit, outmask, gain=gain, readn=rdnoise)
@@ -136,6 +137,7 @@ def call_gstransform(image, arc):
         out = gmos.gstransform.outpref + image
     print(out)
     utils.delete('{0}.fits'.format(out))
+    print('File {0} exists? {1}'.format(image, os.path.isfile(image)))
     gmos.gstransform(image, outimage=out, wavtraname=arc)
     print('-' * 30)
     return out
@@ -157,10 +159,11 @@ def call_align(inimage, suffix, Nslits):
 def call_gsskysub(tgsfile, align=''):
     print('-' * 30)
     print('calling gsskysub')
-    print(' {0}{1} -->'.format(tgsfile, align, end=' '))
+    print(' {0}{1} -->'.format(tgsfile, align), end=' ')
     out = gmos.gsskysub.outpref + tgsfile + align
     print(out)
     utils.delete('{0}.fits'.format(out))
+    print('File {0} exists? {1}'.format(tgsfile, os.path.isfile(tgsfile)))
     gmos.gsskysub(tgsfile + align, output=out)
     print('-' * 30)
     return out
@@ -198,30 +201,30 @@ def call_gnscombine(cluster, inimages, outimage=''):
     return out
 
 
-def call_imcombine(cluster, mask, im, Nslits=1):
+def call_imcombine(objectid, mask, im, Nslits=1, longslit=False):
     print('-' * 30)
-    if mask == 'longslit':
+    #if mask == 'longslit':
+    if longslit:
         outimage = '{0}{1}{2}-{3}_ls'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, cluster.replace(' ', '_'))
+            gmos.gsreduce.outpref, objectid.replace(' ', '_'))
     else:
-        outimage = '{0}{1}{2}-{3}_mask{4}'.format(
+        outimage = '{0}{1}{2}-{3}_{4}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, cluster.replace(' ', '_'), mask)
+            gmos.gsreduce.outpref, objectid.replace(' ', '_'), mask)
     print('Combining images {0} --> {1}'.format(im, outimage))
     os.system('cp {0}.fits {1}.fits'.format(im[0], outimage))
     f = pyfits.open('{0}.fits'.format(im[0]))
     gain = float(f[0].header['GAINMULT'])
     rdnoise = float(f[0].header['RDNOISE'])
     f.close()
-    for i in range(1, Nslits + 1):
-        j = str(i)
+    for i in range(1, Nslits+1):
         inslit = ''
         for jm in im:
-            inslit = '{0}[sci,{1}],'.format(jm, j)
+            inslit = '{0}[sci,{1}],'.format(jm, i)
         # to remove the last ','
         inslit = inslit[:-1]
-        outslit = outimage + '[sci,{0},overwrite]'.format(j)
+        outslit = outimage + '[sci,{0},overwrite]'.format(i)
         iraf.imcombine(inslit, output=outslit, gain=gain, rdnoise=rdnoise)
     print('-' * 30)
     return outimage
