@@ -26,20 +26,20 @@ def longslit(args, waves, assoc):
             arc = tasks.call_gsreduce(args, arc, flat, comb)
             science = tasks.call_gsreduce(args, science, flat, comb)
             tasks.call_gdisplay(args, science, 1)
-            science = tasks.call_lacos(science, longslit=True)
+            science = tasks.call_lacos(args, science, longslit=True)
             tasks.call_gdisplay(args, science, 1)
-            tasks.call_gswave(arc)
-            tasks.call_gstransform(arc, arc)
+            tasks.call_gswave(args, arc)
+            tasks.call_gstransform(args, arc, arc)
 
-            science = tasks.call_gstransform(science, arc)
+            science = tasks.call_gstransform(args, science, arc)
             tasks.call_gdisplay(args, science, 1)
-            combine.append(tasks.call_gsskysub(science))
+            combine.append(tasks.call_gsskysub(args, science))
             if len(combine) == len(waves):
                 added = tasks.call_imcombine(
-                    args.objectid, str(mask), combine, longslit=True)
+                    args, str(mask), combine, longslit=True)
                 tasks.call_gdisplay(args, added, 1)
 
-        spectra = tasks.call_gsextract(args.objectid, mask)
+        spectra = tasks.call_gsextract(args, mask)
         Naps = raw_input('Number of apertures extracted: ')
         # In case you don't see the message after so many
         # consecutive "Enters"
@@ -86,30 +86,30 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         science = tasks.call_gsreduce(args, science, flat, comb)
         tasks.call_gdisplay(args, science, 1)
         Nslits = utils.get_nslits(science)
-        science = tasks.call_lacos(science, Nslits)
+        science = tasks.call_lacos(args, science, Nslits)
         tasks.call_gdisplay(args, science, 1)
-        tasks.call_gswave(arc)
-        tasks.call_gstransform(arc, arc)
+        tasks.call_gswave(args, arc)
+        tasks.call_gstransform(args, arc, arc)
         if args.align:
             tasks.call_align(arc, align, Nslits)
-        science = tasks.call_gstransform(science, arc)
+        science = tasks.call_gstransform(args, science, arc)
         if args.align:
             tasks.call_align(science, align_suffix, Nslits)
             tasks.call_gdisplay(args, science + align_suffix, 1)
-            science = tasks.call_gsskysub(science, align_suffix)
+            science = tasks.call_gsskysub(args, science, align_suffix)
             tasks.call_gdisplay(args, science, 1)
             combine.append(science)
         else:
             tasks.call_gdisplay(args, science, 1)
-            science = tasks.call_gsskysub(science, '')
+            science = tasks.call_gsskysub(args, science, '')
             tasks.call_gdisplay(args, science, 1)
             combine.append(science)
         # once we've reduced all individual images
         if len(combine) == len(files_science.keys()):
             added = tasks.call_imcombine(
-                args.objectid, mask, combine, Nslits)
+                args, mask, combine, path, Nslits)
             tasks.call_gdisplay(args, added, 1)
-            spectra = tasks.call_gsextract(args.objectid, str(mask))
+            spectra = tasks.call_gsextract(args, str(mask))
             if args.align:
                 aligned = tasks.call_align(added, align, Nslits)
                 tasks.call_gdisplay(args, aligned, 1)
@@ -176,7 +176,7 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
         #science = tasks.call_gsreduce(args, science, '', comb, mode = 'ns1')
         #tasks.call_gdisplay(args, science, 1)
         ##Nslits = utils.get_nslits(science)
-        ##science = tasks.call_lacos(science, Nslits)
+        ##science = tasks.call_lacos(args. science, Nslits)
         #science = tasks.call_gnsskysub(science)
         #tasks.call_gdisplay(args, science, 1)
         #tasks.call_gswave(arc)

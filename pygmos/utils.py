@@ -109,6 +109,16 @@ def delete(filename):
     return
 
 
+def skip(args, task_name):
+    """Check whether a task should be skipped based on `args.begin`"""
+    tasks = ['flat', 'reduce', 'lacos', 'wavelength', 'transform', 'skysub',
+             'combine', 'extract']
+    i = tasks.index(task_name)
+    if args.begin in tasks[i+1:]:
+        return True
+    return False
+
+
 def get_file(assoc, science, mask=1, obs='science', wave=670):
     assocfile = open(assoc)
     while assocfile.readline()[0] == '#':

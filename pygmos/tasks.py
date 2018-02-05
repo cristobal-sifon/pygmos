@@ -26,9 +26,11 @@ def call_gdisplay(args, image, frame):
 
 def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
                 fl_inter='no', fl_answer='no'):
-    utils.remove_previous_files(flat, filetype='flat')
     output = '{0}_flat'.format(flat)
     comb = '{0}_comb'.format(flat)
+    if utils.skip(args, 'flat'):
+        return output, comb
+    utils.remove_previous_files(flat, filetype='flat')
     # for now
     bias = args.bias
     if args.nobias:
@@ -51,6 +53,9 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
 
 def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
                   fl_bias='yes', fl_over='yes'):
+    output = utils.add_prefix(img, gmos.gsreduce)
+    if utils.skip(args, 'reduce'):
+        return output
     utils.remove_previous_files(img)
     # for now
     bias = args.bias
@@ -76,10 +81,13 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
         gmos.gsreduce(img, fl_fixpix='no', fl_trim='no', fl_bias='no',
                       fl_flat='no', fl_gsappwave='no', fl_cut='no',
                       fl_title='no', geointer='nearest')
-    return utils.add_prefix(img, gmos.gsreduce)
+    return output
 
 
-def call_lacos(science, Nslits=0, longslit=False):
+def call_lacos(args, science, Nslits=0, longslit=False):
+    outfile = '{0}_lacos.fits'.format(science)
+    if utils.skip(args, 'lacos'):
+        return outfile[:-5]
     print()
     print('-' * 30)
     print()
@@ -88,7 +96,6 @@ def call_lacos(science, Nslits=0, longslit=False):
     head = pyfits.getheader(science + '.fits')
     gain = head['GAIN']
     rdnoise = head['RDNOISE']
-    outfile = '{0}_lacos.fits'.format(science)
     utils.delete(outfile)
     os.system('cp  -p ' + science + '.fits ' +  outfile)
     utils.makedir('slits')
@@ -115,11 +122,13 @@ def call_lacos(science, Nslits=0, longslit=False):
     print('Done in {0:.2f}'.format((time()-to)/60))
     print()
     print('-' * 30)
-    return outfile[:-5]
     print()
+    return outfile[:-5]
 
 
-def call_gswave(arc):
+def call_gswave(args, arc):
+    if utils.skip(args, 'wavelength'):
+        return
     print('-' * 30)
     print('calling gswavelength on', arc)
     gmos.gswavelength(arc)
@@ -127,14 +136,16 @@ def call_gswave(arc):
     return
 
 
-def call_gstransform(image, arc):
-    print('-' * 30)
-    print('calling gstransform')
-    print('{0} -->'.format(image), end=' ')
+def call_gstransform(args, image, arc):
     if image[-5:] == 'lacos':
         out = gmos.gstransform.outpref + image[:-6]
     else:
         out = gmos.gstransform.outpref + image
+    if utils.skip(args, 'transform'):
+        return out
+    print('-' * 30)
+    print('calling gstransform')
+    print('{0} -->'.format(image), end=' ')
     print(out)
     utils.delete('{0}.fits'.format(out))
     print('File {0} exists? {1}'.format(image, os.path.isfile(image)))
@@ -156,11 +167,13 @@ def call_align(inimage, suffix, Nslits):
     return outimage
 
 
-def call_gsskysub(tgsfile, align=''):
+def call_gsskysub(args, tgsfile, align=''):
+    out = gmos.gsskysub.outpref + tgsfile + align
+    if utils.skip(args, 'skysub'):
+        return out
     print('-' * 30)
     print('calling gsskysub')
     print(' {0}{1} -->'.format(tgsfile, align), end=' ')
-    out = gmos.gsskysub.outpref + tgsfile + align
     print(out)
     utils.delete('{0}.fits'.format(out))
     print('File {0} exists? {1}'.format(tgsfile, os.path.isfile(tgsfile)))
@@ -169,11 +182,13 @@ def call_gsskysub(tgsfile, align=''):
     return out
 
 
-def call_gnsskysub(inimages):
+def call_gnsskysub(args, inimages):
+    out = gmos.gnsskysub.outpref + inimages
+    if utils.skip(args, 'skysub'):
+        return out
     print('-' * 30)
     print('calling gnsskysub')
     print(' ', inimages, '-->', end=' ')
-    out = gmos.gnsskysub.outpref + inimages
     print(out)
     utils.delete(out + '.fits')
     gmos.gnsskysub(inimages)
@@ -181,12 +196,14 @@ def call_gnsskysub(inimages):
     return out
 
 
-def call_gnscombine(cluster, inimages, outimage=''):
+def call_gnscombine(args, inimages, outimage=''):
     """
     INCOMPLETE
     """
     if not outimage:
-        outimage = 'nsc-' + cluster
+        outimage = 'nsc-' + args.objectid
+    if utils.skip(args, 'combine'):
+        return outimage
     print('-' * 30)
     print('calling gnscombine')
     #write_offsets(inimages)
@@ -198,23 +215,25 @@ def call_gnscombine(cluster, inimages, outimage=''):
         inimages, 'offsets.dat', outimage,
         outcheckim='{0}_cr'.format(outimage), outmedsky=outimage + '_sky')
     print('-' * 30)
-    return out
+    return outimage
 
 
-def call_imcombine(objectid, mask, im, Nslits=1, longslit=False):
-    print('-' * 30)
+def call_imcombine(args, mask, im, path='./', Nslits=1, longslit=False):
     #if mask == 'longslit':
     if longslit:
         outimage = '{0}{1}{2}-{3}_ls'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, objectid.replace(' ', '_'))
+            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'))
     else:
         outimage = '{0}{1}{2}-{3}_{4}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, objectid.replace(' ', '_'), mask)
+            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
+    if utils.skip('combine'):
+        return outimage
+    print('-' * 30)
     print('Combining images {0} --> {1}'.format(im, outimage))
     os.system('cp {0}.fits {1}.fits'.format(im[0], outimage))
-    f = pyfits.open('{0}.fits'.format(im[0]))
+    f = pyfits.open('{0}.fits'.format(os.path.join(path, im[0])))
     gain = float(f[0].header['GAINMULT'])
     rdnoise = float(f[0].header['RDNOISE'])
     f.close()
@@ -230,20 +249,21 @@ def call_imcombine(objectid, mask, im, Nslits=1, longslit=False):
     return outimage
 
 
-def call_gsextract(cluster, mask):
+def call_gsextract(args, mask):
     if mask == 'longslit':
         infile = '{0}{1}{2}-{3}_ls'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, cluster.replace(' ', '_'))
+            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'))
     else:
         infile = '{0}{1}{2}-{3}_mask{4}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, cluster.replace(' ', '_'), mask)
+            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
+    out = gmos.gsextract.outprefix + infile
+    if utils.skip(args, 'extract'):
+        return out
     print('-' * 30)
     print('calling gsextract')
-    print(infile, '-->', end=' ')
-    out = gmos.gsextract.outprefix + infile
-    print(out)
+    print(infile, '-->', out)
     utils.delete(out + '.fits')
     gmos.gsextract(infile)
     print('-' * 30)
