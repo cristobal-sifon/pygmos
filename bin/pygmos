@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function)
 
 import os
 import sys
-import time
+from time import sleep, time
 try:
     from astropy.io import fits as pyfits
 except ImportError:
@@ -59,7 +59,9 @@ def main():
     # open DS9?
     if args.ds9:
         os.system('ds9 &')
-        time.sleep(10)
+        if args.begin:
+            print('Giving ds9 10 seconds to open...')
+            sleep(10)
     # GMOS display format
     iraf.set(stdimage='imtgmos')
     if args.align:
@@ -85,8 +87,7 @@ def main():
 
 
 if __name__ == '__main__':
-    t0 = time.time()
+    to = time()
     main()
-    print('\nTotal execution time {0:.1f} min'.format(
-        ((time.time() - t0) / 60)))
+    print('\nTotal execution time {0:.1f} min'.format(((time()-to) / 60)))
 

@@ -12,11 +12,6 @@ def longslit(args, waves, assoc):
     Reduce longslit data
 
     """
-    # to allow DS9 to open
-    if args.ds9 and args.begin:
-        print('\nGiving ds9 10 seconds to open...')
-        sleep(10)
-
     combine = []
     mask = 'longslit'
     path = os.path.join(args.objectid.replace(' ', '_'), mask)
@@ -64,11 +59,6 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
     identification, calibration and extraction of spectra.
 
     """
-    # to allow DS9 to open
-    if args.ds9 and args.begin:
-        print('\nGiving ds9 10 seconds to open...')
-        sleep(10)
-
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
