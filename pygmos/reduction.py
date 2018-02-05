@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+from time import sleep
 from pyraf import iraf
 
 from . import check_gswave, tasks, utils
@@ -58,6 +59,11 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
     identification, calibration and extraction of spectra.
 
     """
+    # to allow DS9 to open
+    if args.ds9 and args.begin:
+        print('Giving ds9 10 seconds to open...')
+        sleep(10)
+
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
