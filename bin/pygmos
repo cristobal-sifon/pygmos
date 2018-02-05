@@ -59,6 +59,7 @@ def main():
     # open DS9?
     if args.ds9:
         os.system('ds9 &')
+        time.sleep(10)
     # GMOS display format
     iraf.set(stdimage='imtgmos')
     if args.align:

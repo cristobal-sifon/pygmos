@@ -228,7 +228,7 @@ def call_imcombine(args, mask, im, path='./', Nslits=1, longslit=False):
         outimage = '{0}{1}{2}-{3}_{4}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
-    if utils.skip('combine'):
+    if utils.skip(args, 'combine'):
         return outimage
     print('-' * 30)
     print('Combining images {0} --> {1}'.format(im, outimage))
