@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 from time import sleep
 from pyraf import iraf
 
@@ -8,10 +9,7 @@ from . import check_gswave, tasks, utils
 
 
 def longslit(args, waves, assoc):
-    """
-    Reduce longslit data
-
-    """
+    """Reduce longslit data"""
     combine = []
     mask = 'longslit'
     path = os.path.join(args.objectid.replace(' ', '_'), mask)
@@ -24,8 +22,8 @@ def longslit(args, waves, assoc):
             science = utils.get_file(assoc, mask, obs='science', wave=wave)
             iraf.chdir(path)
             flat, comb = tasks.call_gsflat(args, flat)
-            arc = tasks.call_gsreduce(args, arc, flat, comb)
-            science = tasks.call_gsreduce(args, science, flat, comb)
+            arc = tasks.call_gsreduce(args, arc, flat, args.bias, comb)
+            science = tasks.call_gsreduce(args, science, flat, args.bias, comb)
             tasks.call_gdisplay(args, science, 1)
             science = tasks.call_lacos(args, science, longslit=True)
             tasks.call_gdisplay(args, science, 1)
@@ -47,22 +45,26 @@ def longslit(args, waves, assoc):
         while Naps == '':
             Naps = raw_input('Please enter number of apertures extracted: ')
         Naps = int(Naps)
-        tasks.Cut_apertures(args.objectid, Naps)
+        tasks.cut_apertures(args.objectid, Naps)
         utils.delete('tmp*')
         iraf.chdir('../..')
     return
 
 
 def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
-    """
-    The reduction process for MOS data. It goes through file
-    identification, calibration and extraction of spectra.
+    """The reduction process for MOS data.
+
+    It goes through file identification, calibration and extraction of
+    spectra.
 
     """
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
     path = os.path.join(args.objectid, mask)
+
+    # for now
+    bias = args.bias
 
     # debugging - I don't think this should ever happen but hey
     if not files_science:
@@ -83,8 +85,8 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         iraf.chdir(path)
 
         flat, comb = tasks.call_gsflat(args, flat)
-        arc = tasks.call_gsreduce(args, arc, flat, comb)
-        science = tasks.call_gsreduce(args, science, flat, comb)
+        arc = tasks.call_gsreduce(args, arc, flat, bias, comb)
+        science = tasks.call_gsreduce(args, science, flat, bias, comb)
         tasks.call_gdisplay(args, science, 1)
         Nslits = utils.get_nslits(science)
         science = tasks.call_lacos(args, science, Nslits)
@@ -118,8 +120,8 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.Cut_spectra(args, str(mask), spec='2d')
-    tasks.Cut_spectra(args, str(mask), spec='1d')
+    tasks.cut_spectra(args, str(mask), spec='2d')
+    tasks.cut_spectra(args, str(mask), spec='1d')
     check_gswave.main(
         args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks
@@ -197,8 +199,8 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.Cut_spectra(args, str(mask), spec='2d')
-    tasks.Cut_spectra(args, str(mask), spec='1d')
+    tasks.cut_spectra(args, str(mask), spec='2d')
+    tasks.cut_spectra(args, str(mask), spec='1d')
     check_gswave.main(
         args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks

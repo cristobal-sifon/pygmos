@@ -176,7 +176,8 @@ def call_gsskysub(args, tgsfile, align=''):
     print(' {0}{1} -->'.format(tgsfile, align), end=' ')
     print(out)
     utils.delete('{0}.fits'.format(out))
-    print('File {0} exists? {1}'.format(tgsfile, os.path.isfile(tgsfile)))
+    print('File {0} exists? {1}'.format(
+        tgsfile, os.path.isfile(tgsfile)))
     gmos.gsskysub(tgsfile + align, output=out)
     print('-' * 30)
     return out
@@ -270,7 +271,7 @@ def call_gsextract(args, mask):
     return out
 
 
-def Cut_spectra(args, mask, spec='1d'):
+def cut_spectra(args, mask, spec='1d'):
     """
     Takes the extracted spectra and copies them to a single folder called
     spectra/ (by default) in the parent folder. All spectra from all objects 
@@ -316,7 +317,7 @@ def Cut_spectra(args, mask, spec='1d'):
     return
 
 
-def Cut_apertures(args, infile, outroot, Naps, path='../../spectra'):
+def cut_apertures(args, infile, outroot, Naps, path='../../spectra'):
     for i in range(Naps):
         iraf.scopy('{0}[sci,1] {1}{2}'.format(infile, outroot, i),
                    apertures=i)
