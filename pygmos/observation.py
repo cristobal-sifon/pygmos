@@ -2,12 +2,14 @@ from __future__ import absolute_import, division, print_function
 
 from astropy import units as u
 from astropy.io import fits
+from astropy.table import Table
 from astropy.wcs import WCS
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 import sys
+import warnings
 
 
 class BaseHeader(object):
@@ -56,7 +58,7 @@ class Mask(BaseHeader):
         is available, in which case it is read from it.
         """
         self.file = file
-        self.data = fits.getdata(self.file)
+        self.data = Table(fits.getdata(self.file))
         self._header = None
         if sys.version_info[0] == 2:
             super(BaseHeader, self).__init__()
@@ -87,7 +89,30 @@ class Mask(BaseHeader):
         if self._pixscale is None:
             return self.header[1]['PIXSCALE'] * u.arcsec
 
-    def slits_collection(self, world=False, ax=None, acq_width=2, **kwargs):
+    def plot(self, ax=None):
+        if ax is None:
+            ax = plt
+        
+
+    def scale_slit(self, slit, world=True):
+        """
+        Scale the size of a slit to world or CCD coordinates, if
+        necessary
+        """
+        if world:
+            keys = ('RA', 'DEC')
+            scale = 1 / 3600
+        else:
+            keys = ('x_ccd', 'y_ccd')
+            scale = 1 / self.pixscale.to(u.arcsec).value
+        x = slit[keys[0]] + scale*slit['slitpos_x']
+        y = slit[keys[1]] + scale*slit['slitpos_y']
+        width = scale * slit['slitsize_x']
+        height = scale * slit['slitsize_y']
+        return x, y, width, height
+
+    def slits_collection(self, world=True, ax=None, acq_width=2,
+                         **kwargs):
         """Load mask slits as a `matplotlib.patches.PatchCollection`
         object
 
@@ -111,29 +136,18 @@ class Mask(BaseHeader):
 
         ***NOTE: only rectangle slits are implemented so far***
         """
-        # slit sizes and positions are given in arcsec
-        if world:
-            keys = ('RA', 'DEC')
-            scale = 1 / 3600
-        else:
-            keys = ('x_ccd', 'y_ccd')
-            scale = 1 / self.pixscale.to(u.arcsec).value
-        h = self.header[1]
         science = []
         #acquisition = []
-        x = self.data[keys[0]] + scale*self.data['slitpos_x']
-        y = self.data[keys[1]] + scale*self.data['slitpos_y']
-        for i in range(self.nslits):
-            xsize = self.data['slitsize_x'][i]
-            ysize = self.data['slitsize_y'][i]
-            if self.data['slittype'][i] == 'rectangle':
-                if not (xsize == ysize == acq_width):
-                    #acquisition.append(
-                        #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
-                                  #angle=self.pa+45))
-                    science.append(
-                        Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
-                                  angle=self.pa))
+        for slit in self.data:
+            if slit['slitsize_x'] == slit['slitsize_y'] == acq_width:
+                continue
+                #acquisition.append(
+                    #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
+                              #angle=self.pa+45))
+                #science.append(
+                    #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
+                              #angle=self.pa))
+            science.append(self.slit_patch(slit, world=world, ax=ax))
         science_collection = PatchCollection(science, **kwargs)
         #acquisition_collection = PatchCollection(acquisition)
         if isinstance(ax, matplotlib.axes.Axes):
@@ -141,8 +155,19 @@ class Mask(BaseHeader):
             #ax.add_collection(acquisition_collection)
         return science_collection
 
-    def plot(self, ax=None):
-        if ax is None:
-            ax = plt
-        
+    def slit_patch(self, slit, world=True, ax=None, **kwargs):
+        """Create a `matplotlib.patches` method
+
+        `kwargs` is passed to the appropriate `matplotlib.patches`
+        method (e.g., `Rectangle`)
+        """
+        # for now
+        if slit['slittype'] != 'rectangle':
+            msg = 'Only rectangular slits are supported. Skipping' \
+                  ' slit of type {0}'.format(slit['slittype'])
+            warnings.warn(msg)
+            return
+        x, y, width, height = self.scale_slit(slit, world=world)
+        patch = Rectangle((x, y), width, height, **kwargs)
+        return patch
 
