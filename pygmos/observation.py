@@ -18,6 +18,7 @@ try:
 except ImportError:
     _have_aplpy = False
 
+
 class BaseHeader(object):
 
     def __init__(self, file):
@@ -93,10 +94,6 @@ class Mask(BaseHeader):
 
     def get_frame(self):
         return self.frame
-
-    def plot(self, ax=None):
-        if ax is None:
-            ax = plt
 
     def set_frame(self, frame):
         """set coordinate frame to either 'world' or 'image'"""
