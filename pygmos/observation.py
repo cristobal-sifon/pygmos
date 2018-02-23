@@ -8,9 +8,15 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
+from matplotlib.transforms import Affine2D
 import sys
 import warnings
 
+try:
+    import aplpy
+    _have_aplpy = True
+except ImportError:
+    _have_aplpy = False
 
 class BaseHeader(object):
 
@@ -44,29 +50,38 @@ class BaseImage(BaseHeader):
 
 
 class Mask(BaseHeader):
-    """
-    Notes:
-        -the position angle must be read from the preimage, although this will
-         only work if this is a GMOS preimage! the PA has to be somewhere in
-         the MDF/ODF
+    """GMOS MOS mask object class
+
+    Parameters
+    ----------
+    file : str
+        name of the MOS mask file
+    frame : {"world","image","ccd"}
+        whether to work with the mask in world coordinate system (WCS),
+        or image/ccd coordinates (the latter two are equivalent).
+        Defaults to "world".
 
     """
 
-    def __init__(self, file, preimage=None, angle=0):
-        """
-        For now, the angle must be set manually unless a GMOS preimage
-        is available, in which case it is read from it.
-        """
+    def __init__(self, file, frame='world'):
         self.file = file
         self.data = Table(fits.getdata(self.file))
+        self.set_frame(frame)
         self._header = None
         if sys.version_info[0] == 2:
             super(BaseHeader, self).__init__()
         else:
             super().__init__(self.file)
+        self._name = None
         self._nslits = None
         self._pa = None
         self._pixscale = None
+
+    @property
+    def name(self):
+        """Mask name"""
+        if self._name is None:
+            return self.header[0]['DATALAB']
 
     @property
     def nslits(self):
@@ -75,13 +90,13 @@ class Mask(BaseHeader):
             return self.header[1]['NAXIS2']
 
     @property
-    def pa(self):
+    def pa(self, pa_key='MASK_PA'):
         """Mask position angle"""
         if self._pa is None:
             for h in self.header:
-                if 'MASK_PA' in h:
-                    return h['MASK_PA']
-            return None
+                if pa_key in h:
+                    return h[pa_key]
+            raise KeyError('Key {0} not found in mask header'.format(pa_key))
 
     @property
     def pixscale(self):
@@ -89,35 +104,33 @@ class Mask(BaseHeader):
         if self._pixscale is None:
             return self.header[1]['PIXSCALE'] * u.arcsec
 
+    def get_frame(self):
+        return self.frame
+
     def plot(self, ax=None):
         if ax is None:
             ax = plt
-        
 
-    def rescale_slit(self, slit, world=True):
-        """
-        Scale the size of a slit to world or CCD coordinates, if
-        necessary
-        """
-        if world:
-            keys = ('RA', 'DEC')
-            scale = 1 / 3600
-        else:
-            keys = ('x_ccd', 'y_ccd')
-            scale = 1 / self.pixscale.to(u.arcsec).value
-        x = slit[keys[0]] + scale*slit['slitpos_x']
-        y = slit[keys[1]] + scale*slit['slitpos_y']
-        width = scale * slit['slitsize_x']
-        height = scale * slit['slitsize_y']
-        return x-width/2, y-height/2, width, height
+    def set_frame(self, frame):
+        """set coordinate frame to either 'world' or 'image'"""
+        assert frame in ('world', 'image', 'ccd'), \
+            'Attribute `frame` must be one of "world","image" or "ccd"' \
+            ' ("ccd" is an alias for "image").'
+        self.frame = frame
 
-    def slits_collection(self, world=True, ax=None, acq_width=2,
-                         **kwargs):
+
+    def _assert_slittype(self, slit):
+        """Until more slit types are implemented"""
+        if slit['slittype'] != 'rectangle':
+            msg = 'Only rectangular slits are supported. Skipping' \
+                  ' slit of type {0} '.format(slit['slittype'])
+            warnings.warn(msg)
+            return False
+        return True
+
+    def slits_collection(self, ax=None, **kwargs):
         """Load mask slits as a `matplotlib.patches.PatchCollection`
         object
-
-        If `world=True`, slits will be returned in WCS coordinates. If
-        false, they will be returned in image coordinates.
 
         `ax` should be a `matplotlib.axes.Axes` object. If provided, the
         slits will be plotted in the axis.
@@ -139,7 +152,7 @@ class Mask(BaseHeader):
         science = []
         #acquisition = []
         for slit in self.data:
-            if slit['slitsize_x'] == slit['slitsize_y'] == acq_width:
+            if slit['priority'] == '0':
                 continue
                 #acquisition.append(
                     #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
@@ -147,7 +160,7 @@ class Mask(BaseHeader):
                 #science.append(
                     #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
                               #angle=self.pa))
-            science.append(self.slit_patch(slit, world=world, ax=ax))
+            science.append(self.slit_patch(slit, ax=ax))
         science_collection = PatchCollection(science, **kwargs)
         #acquisition_collection = PatchCollection(acquisition)
         if isinstance(ax, matplotlib.axes.Axes):
@@ -155,19 +168,106 @@ class Mask(BaseHeader):
             #ax.add_collection(acquisition_collection)
         return science_collection
 
-    def slit_patch(self, slit, world=True, ax=None, **kwargs):
+    def slits_regions(self, output='default', fig=None, **kwargs):
+        """Create a DS9 region file with the mask slits
+
+        Parameters
+        ----------
+        slit : single-row `dict` or `astropy.table.Table`
+            set of parameters defining a single slit
+        output : str
+            filename on to which to write the regions. If set to
+            'default', then the name will be the name of the mask, with
+            a .reg extension (e.g., GS2017BQ076-01.reg), in the working
+            directory (not necessarily the directory containing the mask)
+        fig : `aplpy.FITSFigure` instance (optional)
+            figure on top of which the regions will be plotted
+        kwargs : `aplpy.FITSFigure.show_regions` keyword arguments
+
+        Returns
+        -------
+        region_file : str
+            name of the region file
+        """
+        regions = []
+        for slit in self.data:
+            if slit['priority'] == '0':
+                continue
+            regions.append(self.slit_region(slit))
+        if output == 'default':
+            output = '{0}.reg'.format(self.name)
+        with open(output, 'w') as f:
+            if self.frame == 'world':
+                print('global fk5', file=f)
+            for reg in regions:
+                print(reg, file=f)
+        if _have_aplpy and isinstance(fig, aplpy.FITSFigure):
+            fig.show_regions(output, **kwargs)
+        return output
+
+    def slit_region(self, slit):
+        """Create a DS9 region in region file format
+
+        Parameters
+        ----------
+        slit : single-row `dict` or `astropy.table.Table`
+            set of parameters defining a single slit
+
+        Returns
+        -------
+        region : str
+            string containing region in region file format
+        """
+        if not self._assert_slittype(slit):
+            return
+        x, y = self.slit_position(slit)
+        width, height = self.slit_size(slit)
+        if slit['slittype'] == 'rectangle':
+            region = 'Box({0},{1},{2},{3},{4})'.format(
+                x, y, width, height, self.pa)
+        return region
+
+    def slit_patch(self, slit, ax=None, **kwargs):
         """Create a `matplotlib.patches` method
 
         `kwargs` is passed to the appropriate `matplotlib.patches`
         method (e.g., `Rectangle`)
         """
-        # for now
-        if slit['slittype'] != 'rectangle':
-            msg = 'Only rectangular slits are supported. Skipping' \
-                  ' slit of type {0}'.format(slit['slittype'])
-            warnings.warn(msg)
+        if not self._assert_slittype(slit):
             return
-        x, y, width, height = self.rescale_slit(slit, world=world)
-        patch = Rectangle((x, y), width, height, **kwargs)
+        x, y = self.slit_position(slit)
+        width, height = self.slit_size(slit)
+        if slit['slittype'] == 'rectangle':
+            patch = Rectangle(
+                (x-width/2, y-height/2), width, height, **kwargs)
+        # rotate around the center
+        tform = Affine2D().rotate_deg_around(x, y, self.pa)
+        patch.set_transform(tform)
         return patch
+
+    def slit_position(self, slit):
+        """
+        Scale the size of a slit to world or CCD coordinates, if
+        necessary
+        """
+        if self.frame == 'world':
+            xo = 15 * slit['RA']
+            yo = slit['DEC']
+            scale = 1 / 3600
+        else:
+            xo = slit['x_ccd']
+            yo = slit['y_ccd']
+            scale = 1 / self.pixscale.to(u.arcsec).value
+        x = xo + scale*slit['slitpos_x']
+        y = yo + scale*slit['slitpos_y']
+        width, height = self.slit_size(slit)
+        #return x-width/2, y-height/2
+        return x, y
+
+    def slit_size(self, slit):
+        if self.frame == 'world':
+            scale = 1 / 3600
+        else:
+            scale = 1 / self.pixscale.to(u.arcsec).value
+        return scale*slit['slitsize_x'], scale*slit['slitsize_y']
 
