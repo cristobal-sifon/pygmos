@@ -36,19 +36,6 @@ class BaseHeader(object):
             return hdr
 
 
-class BaseImage(BaseHeader):
-
-    def __init__(self, file):
-        self.file = file
-        self._data = None
-        super().__init__(self.file)
-
-    @property
-    def data(self):
-        if self._data is None:
-            return fits.getdata(self.file)
-
-
 class Mask(BaseHeader):
     """GMOS MOS mask object class
 
@@ -150,22 +137,13 @@ class Mask(BaseHeader):
         ***NOTE: only rectangle slits are implemented so far***
         """
         science = []
-        #acquisition = []
         for slit in self.data:
             if slit['priority'] == '0':
                 continue
-                #acquisition.append(
-                    #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
-                              #angle=self.pa+45))
-                #science.append(
-                    #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
-                              #angle=self.pa))
             science.append(self.slit_patch(slit, ax=ax))
         science_collection = PatchCollection(science, **kwargs)
-        #acquisition_collection = PatchCollection(acquisition)
         if isinstance(ax, matplotlib.axes.Axes):
             ax.add_collection(science_collection)
-            #ax.add_collection(acquisition_collection)
         return science_collection
 
     def slits_regions(self, output='default', fig=None, **kwargs):
