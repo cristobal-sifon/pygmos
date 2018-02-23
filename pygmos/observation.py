@@ -94,7 +94,7 @@ class Mask(BaseHeader):
             ax = plt
         
 
-    def scale_slit(self, slit, world=True):
+    def rescale_slit(self, slit, world=True):
         """
         Scale the size of a slit to world or CCD coordinates, if
         necessary
@@ -109,7 +109,7 @@ class Mask(BaseHeader):
         y = slit[keys[1]] + scale*slit['slitpos_y']
         width = scale * slit['slitsize_x']
         height = scale * slit['slitsize_y']
-        return x, y, width, height
+        return x-width/2, y-height/2, width, height
 
     def slits_collection(self, world=True, ax=None, acq_width=2,
                          **kwargs):
@@ -167,7 +167,7 @@ class Mask(BaseHeader):
                   ' slit of type {0}'.format(slit['slittype'])
             warnings.warn(msg)
             return
-        x, y, width, height = self.scale_slit(slit, world=world)
+        x, y, width, height = self.rescale_slit(slit, world=world)
         patch = Rectangle((x, y), width, height, **kwargs)
         return patch
 
