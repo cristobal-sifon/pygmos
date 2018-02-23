@@ -87,8 +87,9 @@ class Mask(BaseHeader):
         if self._pixscale is None:
             return self.header[1]['PIXSCALE'] * u.arcsec
 
-    def slits_collection(self, world=False, ax=None, **kwargs):
-        """Load mask slits as a `matplotlib.patches.PatchCollection` object
+    def slits_collection(self, world=False, ax=None, acq_width=2, **kwargs):
+        """Load mask slits as a `matplotlib.patches.PatchCollection`
+        object
 
         If `world=True`, slits will be returned in WCS coordinates. If
         false, they will be returned in image coordinates.
@@ -97,6 +98,16 @@ class Mask(BaseHeader):
         slits will be plotted in the axis.
 
         `kwargs` are passed to `PatchCollection`
+
+        If I want to return two collections for the science and
+        acquisition slits maybe it's better to return lists of patches
+        so the user can make the collections with their own colors and
+        styles?
+
+        Returns
+        -------
+        slits_collection : `matplotlib.patches.PatchCollection`
+            patch collection of all science slits.
 
         ***NOTE: only rectangle slits are implemented so far***
         """
@@ -108,20 +119,27 @@ class Mask(BaseHeader):
             keys = ('x_ccd', 'y_ccd')
             scale = 1 / self.pixscale.to(u.arcsec).value
         h = self.header[1]
-        slits = []
+        science = []
+        #acquisition = []
         x = self.data[keys[0]] + scale*self.data['slitpos_x']
         y = self.data[keys[1]] + scale*self.data['slitpos_y']
         for i in range(self.nslits):
+            xsize = self.data['slitsize_x'][i]
+            ysize = self.data['slitsize_y'][i]
             if self.data['slittype'][i] == 'rectangle':
-                slits.append(
-                    Rectangle((x[i], y[i]),
-                              scale*self.data['slitsize_x'][i],
-                              scale*self.data['slitsize_y'][i],
-                              angle=self.pa))
-        collection = PatchCollection(slits, **kwargs)
+                if not (xsize == ysize == acq_width):
+                    #acquisition.append(
+                        #Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
+                                  #angle=self.pa+45))
+                    science.append(
+                        Rectangle((x[i], y[i]), scale*xsize, scale*ysize,
+                                  angle=self.pa))
+        science_collection = PatchCollection(science, **kwargs)
+        #acquisition_collection = PatchCollection(acquisition)
         if isinstance(ax, matplotlib.axes.Axes):
-            ax.add_collection(collection)
-        return collection
+            ax.add_collection(science_collection)
+            #ax.add_collection(acquisition_collection)
+        return science_collection
 
     def plot(self, ax=None):
         if ax is None:
