@@ -143,8 +143,11 @@ class Mask(BaseHeader):
             ax.add_collection(science_collection)
         return science_collection
 
-    def slits_regions(self, output='default', fig=None, **kwargs):
+    def slits_regions(self, output='default', fig=None, color='green',
+                      **kwargs):
         """Create a DS9 region file with the mask slits
+
+        See http://ds9.si.edu/doc/ref/region.html for more information.
 
         Parameters
         ----------
@@ -157,6 +160,8 @@ class Mask(BaseHeader):
             directory (not necessarily the directory containing the mask)
         fig : `aplpy.FITSFigure` instance (optional)
             figure on top of which the regions will be plotted
+        color : str
+            a color supported by ds9 regions (see website)
         kwargs : `aplpy.FITSFigure.show_regions` keyword arguments
 
         Returns
@@ -172,8 +177,10 @@ class Mask(BaseHeader):
         if output == 'default':
             output = '{0}.reg'.format(self.name)
         with open(output, 'w') as f:
+            if color:
+                print('global color={0}'.format(color), file=f)
             if self.frame == 'world':
-                print('global fk5', file=f)
+                print('fk5', file=f)
             for reg in regions:
                 print(reg, file=f)
         if _have_aplpy and isinstance(fig, aplpy.FITSFigure):
@@ -198,8 +205,8 @@ class Mask(BaseHeader):
         x, y = self.slit_position(slit)
         width, height = self.slit_size(slit)
         if slit['slittype'] == 'rectangle':
-            region = 'Box({0},{1},{2},{3},{4})'.format(
-                x, y, width, height, self.pa)
+            region = 'Box({0},{1},{2}",{3}",{4})'.format(
+                x, y, 3600*width, 3600*height, self.pa)
         return region
 
     def slit_patch(self, slit, ax=None, **kwargs):
