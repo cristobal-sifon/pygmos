@@ -20,7 +20,7 @@ except ImportError:
     _have_aplpy = False
 
 
-class BaseHeader(object):
+class Header(object):
 
     def __init__(self, file):
         self.file = file
@@ -38,7 +38,90 @@ class BaseHeader(object):
             return hdr
 
 
-class Mask(BaseHeader):
+class Slit(object):
+
+    def __init__(self):
+        return
+
+    def _assert_slittype(self, slit):
+        """Until more slit types are implemented"""
+        if slit['slittype'] != 'rectangle':
+            msg = 'Only rectangular slits are supported. Skipping' \
+                  ' slit of type {0} '.format(slit['slittype'])
+            warnings.warn(msg)
+            return False
+        return True
+
+    def slit_region(self, slit):
+        """Create a DS9 region in region file format
+
+        Parameters
+        ----------
+        slit : single-row `dict` or `astropy.table.Table`
+            set of parameters defining a single slit
+
+        Returns
+        -------
+        region : str
+            string containing region in region file format
+        """
+        if not self._assert_slittype(slit):
+            return
+        x, y = self.slit_position(slit)
+        width, height = self.slit_size(slit, unit='arcsec')
+        if slit['slittype'] == 'rectangle':
+            region = 'Box({0},{1},{2}",{3}",{4})'.format(
+                x, y, width, height, self.pa)
+        return region
+
+    def slit_patch(self, slit, ax=None, **kwargs):
+        """Create a `matplotlib.patches` method
+
+        `kwargs` is passed to the appropriate `matplotlib.patches`
+        method (e.g., `Rectangle`)
+        """
+        if not self._assert_slittype(slit):
+            return
+        x, y = self.slit_position(slit)
+        width, height = self.slit_size(slit)
+        if slit['slittype'] == 'rectangle':
+            patch = Rectangle(
+                (x-width/2, y-height/2), width, height, **kwargs)
+        # rotate around the center
+        tform = Affine2D().rotate_deg_around(x, y, self.pa)
+        patch.set_transform(tform)
+        return patch
+
+    def slit_position(self, slit):
+        """
+        Scale the size of a slit to world or CCD coordinates, if
+        necessary
+        """
+        if self.frame == 'world':
+            xo = 15 * slit['RA']
+            yo = slit['DEC']
+            scale = 1 / 3600
+        else:
+            xo = slit['x_ccd']
+            yo = slit['y_ccd']
+            scale = 1 / self.pixscale.to(u.arcsec).value
+        _pa = (np.pi/180) * self.pa
+        dx = scale * (slit['slitpos_x']*np.cos(_pa) \
+                      + slit['slitpos_y']*np.sin(_pa))
+        dy = scale * (slit['slitpos_x']*np.sin(_pa) \
+                      + slit['slitpos_y']*np.cos(_pa))
+        # the signs here simply have to do with the angle convention
+        return xo-dx, yo-dy
+
+    def slit_size(self, slit, unit='deg'):
+        if self.frame == 'world':
+            scale = (1 * u.arcsec).to(unit).value
+        else:
+            scale = 1 / self.pixscale.to(u.arcsec).value
+        return scale*slit['slitsize_x'], scale*slit['slitsize_y']
+
+
+class Mask(Header, Slit):
     """GMOS MOS mask object class
 
     Parameters
@@ -56,15 +139,14 @@ class Mask(BaseHeader):
         self.file = file
         self.data = Table(fits.getdata(self.file))
         self.set_frame(frame)
-        self._header = None
-        if sys.version_info[0] == 2:
-            super(BaseHeader, self).__init__()
-        else:
-            super().__init__(self.file)
         self._name = None
         self._nslits = None
         self._pa = None
         self._pixscale = None
+        # initialize BaseHeader and BaseSlit
+        self._header = None
+        super(Header, self).__init__()
+        super(Slit, self).__init__()
 
     @property
     def name(self):
@@ -102,16 +184,6 @@ class Mask(BaseHeader):
             'Attribute `frame` must be one of "world","image" or "ccd"' \
             ' ("ccd" is an alias for "image").'
         self.frame = frame
-
-
-    def _assert_slittype(self, slit):
-        """Until more slit types are implemented"""
-        if slit['slittype'] != 'rectangle':
-            msg = 'Only rectangular slits are supported. Skipping' \
-                  ' slit of type {0} '.format(slit['slittype'])
-            warnings.warn(msg)
-            return False
-        return True
 
     def slits_collection(self, ax=None, **kwargs):
         """Load mask slits as a `matplotlib.patches.PatchCollection`
@@ -187,72 +259,4 @@ class Mask(BaseHeader):
         if _have_aplpy and isinstance(fig, aplpy.FITSFigure):
             fig.show_regions(output, **kwargs)
         return output
-
-    def slit_region(self, slit):
-        """Create a DS9 region in region file format
-
-        Parameters
-        ----------
-        slit : single-row `dict` or `astropy.table.Table`
-            set of parameters defining a single slit
-
-        Returns
-        -------
-        region : str
-            string containing region in region file format
-        """
-        if not self._assert_slittype(slit):
-            return
-        x, y = self.slit_position(slit)
-        width, height = self.slit_size(slit, unit='arcsec')
-        if slit['slittype'] == 'rectangle':
-            region = 'Box({0},{1},{2}",{3}",{4})'.format(
-                x, y, width, height, self.pa)
-        return region
-
-    def slit_patch(self, slit, ax=None, **kwargs):
-        """Create a `matplotlib.patches` method
-
-        `kwargs` is passed to the appropriate `matplotlib.patches`
-        method (e.g., `Rectangle`)
-        """
-        if not self._assert_slittype(slit):
-            return
-        x, y = self.slit_position(slit)
-        width, height = self.slit_size(slit)
-        if slit['slittype'] == 'rectangle':
-            patch = Rectangle(
-                (x-width/2, y-height/2), width, height, **kwargs)
-        # rotate around the center
-        tform = Affine2D().rotate_deg_around(x, y, self.pa)
-        patch.set_transform(tform)
-        return patch
-
-    def slit_position(self, slit):
-        """
-        Scale the size of a slit to world or CCD coordinates, if
-        necessary
-        """
-        if self.frame == 'world':
-            xo = 15 * slit['RA']
-            yo = slit['DEC']
-            scale = 1 / 3600
-        else:
-            xo = slit['x_ccd']
-            yo = slit['y_ccd']
-            scale = 1 / self.pixscale.to(u.arcsec).value
-        _pa = (np.pi/180) * self.pa
-        dx = scale * (slit['slitpos_x']*np.cos(_pa) \
-                      + slit['slitpos_y']*np.sin(_pa))
-        dy = scale * (slit['slitpos_x']*np.sin(_pa) \
-                      + slit['slitpos_y']*np.cos(_pa))
-        # the signs here simply have to do with the angle convention
-        return xo-dx, yo-dy
-
-    def slit_size(self, slit, unit='deg'):
-        if self.frame == 'world':
-            scale = (1 * u.arcsec).to(unit).value
-        else:
-            scale = 1 / self.pixscale.to(u.arcsec).value
-        return scale*slit['slitsize_x'], scale*slit['slitsize_y']
 
