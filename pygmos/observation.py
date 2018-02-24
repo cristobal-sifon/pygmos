@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 from matplotlib.transforms import Affine2D
+import numpy as np
 import sys
 import warnings
 
@@ -203,10 +204,10 @@ class Mask(BaseHeader):
         if not self._assert_slittype(slit):
             return
         x, y = self.slit_position(slit)
-        width, height = self.slit_size(slit)
+        width, height = self.slit_size(slit, unit='arcsec')
         if slit['slittype'] == 'rectangle':
             region = 'Box({0},{1},{2}",{3}",{4})'.format(
-                x, y, 3600*width, 3600*height, self.pa)
+                x, y, width, height, self.pa)
         return region
 
     def slit_patch(self, slit, ax=None, **kwargs):
@@ -240,15 +241,17 @@ class Mask(BaseHeader):
             xo = slit['x_ccd']
             yo = slit['y_ccd']
             scale = 1 / self.pixscale.to(u.arcsec).value
-        x = xo + scale*slit['slitpos_x']
-        y = yo + scale*slit['slitpos_y']
-        width, height = self.slit_size(slit)
-        #return x-width/2, y-height/2
-        return x, y
+        _pa = (np.pi/180) * self.pa
+        dx = scale * (slit['slitpos_x']*np.cos(_pa) \
+                      + slit['slitpos_y']*np.sin(_pa))
+        dy = scale * (slit['slitpos_x']*np.sin(_pa) \
+                      + slit['slitpos_y']*np.cos(_pa))
+        # the signs here simply have to do with the angle convention
+        return xo-dx, yo-dy
 
-    def slit_size(self, slit):
+    def slit_size(self, slit, unit='deg'):
         if self.frame == 'world':
-            scale = 1 / 3600
+            scale = (1 * u.arcsec).to(unit).value
         else:
             scale = 1 / self.pixscale.to(u.arcsec).value
         return scale*slit['slitsize_x'], scale*slit['slitsize_y']
