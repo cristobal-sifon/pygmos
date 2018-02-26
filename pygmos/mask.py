@@ -65,6 +65,120 @@ class BaseMaskHeader(object):
             return self.header[1]['PIXSCALE'] * u.arcsec
 
 
+class Region(object):
+    """DS9 region attributes
+
+    See http://ds9.si.edu/doc/ref/region.html for details
+    """
+
+    @property
+    def valid_options(self):
+        return ('color', 'dash', 'dashlist', 'delete', 'edit', 'fixed',
+                'font', 'highlight', 'include', 'move', 'select', 'source',
+                'text', 'width')
+
+    @property
+    def valid_shapes(self):
+        return ('box', 'circle', 'ellipse', 'line', 'polygon', 'point',
+                'vector', 'text', 'ruler', 'compass', 'annulus', 'panda',
+                'epanda', 'bpanda')
+
+    def format_options(self, scope='local', **options):
+        """Format a set of region options to DS9 region file format
+
+        Parameters
+        ----------
+        scope : {'local', 'global'}
+            scope of the options
+        options : `dict`
+            valid reg options. See `self.valid_options`
+
+        Returns
+        -------
+        options_str : `str`
+            formatted options string. If no options are provided,
+            an empty string is returned.
+        """
+        assert scope in ('global', 'local'), \
+            'Please provide a valid value for argument `scope`'
+        options_str = ''
+        for option, value in options.items():
+            if option not in self.valid_options:
+                continue
+            if option in ('font', 'text'):
+                options_str += ' {0}="{1}"'.format(option, value)
+            else:
+                options_str += ' {0}={1}'.format(option, value)
+        if not options_str:
+            return ''
+        if scope == 'global':
+            options_str = 'global {0}'.format(options_str)
+        else:
+            options_str = ' # {0}'.format(options_str)
+        return options_str
+
+    def generate(self, shape, x, y, *args, **kwargs):
+        """Format a DS9 region given its parameters
+
+        Parameters
+        ----------
+        shape : `str`
+            any valid region shape
+        x, y : `float`
+            location of the region.
+        *args : list of `float`
+            all shape parameters required by the region
+        n : `int` (optional)
+            number of annuli
+        unit : `char` (default 'd')
+            dimension unit(s). Valid units are:
+                ''  : context-dependent
+                '"' : arc sec
+                "'" : arc min
+                'd' : degres
+                'r' : radians
+                'p' : physical pixels
+                'i' : image pixels
+        other `kwargs` should be valid region options. See
+        `self.valid_options`
+
+        Note:
+            There seems to be a bug in `aplpy.FITSFigure.show_regions`
+            such that letters ('d','r','p','i') cannot be used as units
+            at this moment, see https://github.com/aplpy/aplpy/issues/381.
+        """
+        # default keyword arguments
+        if 'n' in kwargs:
+            n = kwargs.pop('n')
+        else:
+            n = 0
+        if 'unit' in kwargs:
+            unit = kwargs.pop('unit')
+        else:
+            unit = 'd'
+        assert unit in ('', "'", '"', 'd', 'r', 'p', 'i'), \
+            'Please provide a valid value for argument `unit`.'
+        shape = shape.lower()
+        # add units to relevant quantities - the last is a special case
+        args_fmted = ['{0}{1}'.format(arg, unit) for arg in args[:-1]]
+        if n > 0:
+            args_fmted.append('n={0}'.format(n))
+            pos = -2
+        else:
+            pos = -1
+        # the last element is an angle and has no unit
+        if shape == 'vector' \
+                or (len(args) % 2 == 1 \
+                    and shape in ('box','ellipse','bpanda','epanda')):
+            args_fmted.append(str(args[pos]))
+        else:
+            args_fmted.append('{0}{1}'.format(args[pos], unit))
+        args_fmted = ','.join(args_fmted)
+        options = self.format_options(scope='local', **kwargs)
+        reg = '{0}({1},{2},{3}){4}'.format(shape, x, y, args_fmted, options)
+        return reg
+
+
 class Slit(BaseMaskHeader):
 
     """A slit in a (GMOS) mask
@@ -97,6 +211,7 @@ class Slit(BaseMaskHeader):
             setattr(self, name.lower(), self.data[name])
         self.x, self.y = self.get_position()
         self.width, self.height = self.size_in_frame()
+        self._valid_reg_options = None
         return
 
     def _assert_slittype(self):
@@ -107,6 +222,15 @@ class Slit(BaseMaskHeader):
             warnings.warn(msg)
             return False
         return True
+
+    @property
+    def region_shape(self):
+        shapes = {'rectangle': 'box'}
+        if self.slittype in shapes:
+            return shapes[self.slittype]
+        msg = 'slittype {0} not supported. Drawing circles'.format(
+            self.slittype)
+        return 'circle'
 
     def get_frame(self):
         return self.frame
@@ -156,25 +280,36 @@ class Slit(BaseMaskHeader):
             scale = 1 / self.header.pixscale.to(u.arcsec).value
         return scale*self.slitsize_x, scale*self.slitsize_y
 
-    def region(self):
-        """Create a DS9 region in region file format
+    def region(self, **kwargs):
+        """Create a DS9 region in region file format.
+
+        See http://ds9.si.edu/doc/ref/region.html
 
         Parameters
         ----------
         slit : single-row `dict` or `astropy.table.Table`
             set of parameters defining a single slit
+        kwargs : dict (optional)
+            any custom prorperties of the region. Options are: (color,
+            delete, edit, fixed, font, highlight, include, move,
+            select, text)
 
         Returns
         -------
         region : str
             string containing region in region file format
         """
-        if not self._assert_slittype():
-            return
+        reg = Region()
+        # the 3600 and unit assignment are to ensure this can be loaded
+        # in aplpy, see https://github.com/aplpy/aplpy/issues/381.
         if self.slittype == 'rectangle':
-            region = 'Box({0},{1},{2}",{3}",{4})'.format(
-                self.x, self.y, 3600*self.width, 3600*self.height, self.pa)
-        return region
+            args = [3600*self.width, 3600*self.height, self.pa]
+        kwargs['unit'] = '"'
+        reg_str = reg.generate(
+            #self.region_shape, self.x, self.y, 3600*self.width,
+            #3600*self.height, self.pa, unit='"', **kwargs)
+            self.region_shape, self.x, self.y, *args, **kwargs)
+        return reg_str
 
     def patch(self, ax=None, **kwargs):
         """Create a `matplotlib.patches` instance
@@ -217,17 +352,11 @@ class Mask(BaseMaskHeader):
         self.set_frame(frame)
         self._name = None
         self._nslits = None
-        # initialize BaseMaskHeader
-        #self._header = None
-        # not sure why I need these two?
-        #self._pa = None
-        #self._pixscale = None
 
     @property
     def name(self):
         """Mask name"""
         if self._name is None:
-            #return super(BaseMaskHeader, self).header[0]['DATALAB']
             return self.header[0]['DATALAB']
 
     @property
@@ -246,7 +375,7 @@ class Mask(BaseMaskHeader):
             ' ("ccd" is an alias for "image").'
         self.frame = frame
 
-    def slits_collection(self, ax=None, **kwargs):
+    def collection(self, ax=None, **kwargs):
         """Load mask slits as a `matplotlib.patches.PatchCollection`
         object
 
@@ -262,7 +391,7 @@ class Mask(BaseMaskHeader):
 
         Returns
         -------
-        slits_collection : `matplotlib.patches.PatchCollection`
+        collection : `matplotlib.patches.PatchCollection`
             patch collection of all science slits.
 
         ***NOTE: only rectangle slits are implemented so far***
@@ -272,16 +401,15 @@ class Mask(BaseMaskHeader):
             if slit['priority'] == '0':
                 continue
             slit = Slit(slit, self.file)
-            #science.append(self.slit_patch(slit, ax=ax))
             science.append(slit.patch(ax=ax))
         science_collection = PatchCollection(science, **kwargs)
         if isinstance(ax, matplotlib.axes.Axes):
             ax.add_collection(science_collection)
         return science_collection
 
-    def slits_regions(self, output='default', fig=None, color='green',
-                      **kwargs):
-        """Create a DS9 region file with the mask slits
+    def regions(self, output='default', fig=None, color='green',
+                **kwargs):
+        """Create a DS9 region file with the mask science slits
 
         See http://ds9.si.edu/doc/ref/region.html for more information.
 
@@ -296,20 +424,22 @@ class Mask(BaseMaskHeader):
             directory (not necessarily the directory containing the mask)
         fig : `aplpy.FITSFigure` instance (optional)
             figure on top of which the regions will be plotted
-        color : str
-            a color supported by ds9 regions (see website)
-        kwargs : `aplpy.FITSFigure.show_regions` keyword arguments
+        kwargs : dict (optional)
+            any custom prorperties of the region. Options are: (color,
+            delete, edit, fixed, font, highlight, include, move,
+            select, text). Additional kwargs are passed to
+            `aplpy.FITSFigure.show_regions`.
 
         Returns
         -------
         region_file : str
             name of the region file
         """
+        #region_kwargs = (
         regions = []
         for slit in self.data:
             if slit['priority'] == '0':
                 continue
-            #regions.append(self.slit_region(slit))
             slit = Slit(slit, self.file)
             regions.append(slit.region())
         if output == 'default':
