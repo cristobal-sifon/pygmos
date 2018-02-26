@@ -46,6 +46,21 @@ To see available options, type
 
 ----
 
+## Additional functionality
+
+`pygmos` can also be used to display a `GMOS` mask using `matplotlib`, either by creating a `matplotlib.collections.PatchCollection` object or with `aplpy.FITSFigure.show_regions`:
+
+```python
+from pygmos.mask import Mask
+mask = Mask(mdf_filename)
+# returns a matplotlib.collections.PatchCollection object
+slit_collection = mask.collection()
+# returns a region file name to be passed to aplpy.FITSFigure.show_regions
+regfile = mask.regions()
+```
+
+----
+
 **How it works:**
 
 The pipeline takes the object name given in the command line and finds
