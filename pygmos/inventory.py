@@ -10,10 +10,6 @@ except ImportError:
     from pyfits import getheader
 from glob import glob
 
-from pyraf import iraf
-from iraf import gemini
-from iraf import gmos
-
 from . import utils
 
 
@@ -197,22 +193,22 @@ def run(args):
     # longslit observations
     if args.masks == 'longslit':
         masks = generate(
-            args, args.program, args.objectid, gmos.gsreduce.bias,
+            args, args.program, args.objectid, args.bias,
             args.path, masktype=args.masks)
 
     # just read masks from pre-existing assoc files
     elif args.read_inventory:
-        masks = read(args.objectid, gmos.gsreduce.bias)
+        masks = read(args.objectid, args.bias)
 
     # all MOS masks
     elif args.masks == 'all':
         masks = generate(
-            args, '', args.objectid, gmos.gsreduce.bias, args.path)
+            args, '', args.objectid, args.bias, args.path)
 
     # when MOS masks are specified
     else:
         masks = generate(
-            args, args.program, args.objectid, gmos.gsreduce.bias, args.path)
+            args, args.program, args.objectid, args.bias, args.path)
 
     return masks
 

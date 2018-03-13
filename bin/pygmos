@@ -5,23 +5,36 @@ from __future__ import (absolute_import, division, print_function)
 import os
 import sys
 from time import sleep, time
+import sys
 try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
 
-from pyraf import iraf
-from iraf import gemini
-from iraf import gemtools
-from iraf import gmos
+if sys.version_info[0] == 2:
+    from pyraf import iraf
+    from iraf import gemini
+    from iraf import gemtools
+    from iraf import gmos
+    can_reduce = True
+else:
+    import warnings
+    warning_py36 = \
+        'You are using Python {0}. Due to IRAF/PyRAF system requirements,' \
+        ' the data reduction capabilities of pygmos are only available for' \
+        ' Python 2.7 versions. You may still use the inventory and plotting' \
+        ' routines of pygmos.'.format('.'.join(sys.version_info))
+        warnings.warn(warning_py36)
+    can_reduce = False
 
 """
 PyGMOS
 """
 
-# Other packages provided with the code:
-from pygmos import (check_gswave, inventory, paramtools, reduction, tasks,
-                    utils)
+# Other packages provided with the code
+if can_reduce:
+    from pygmos import (check_gswave, inventory, paramtools, reduction, tasks,
+                        utils)
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
@@ -30,8 +43,8 @@ pygmos_path = os.path.dirname(os.path.split(
 os.environ['pygmos_path'] = pygmos_path
 
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
-iraf.task(lacos_spec=os.path.join(
-    pygmos_path, 'pygmos', 'lacos_spec.cl'))
+if can_reduce:
+    iraf.task(lacos_spec=os.path.join(pygmos_path, 'pygmos', 'lacos_spec.cl'))
 
 
 def main():
@@ -43,12 +56,13 @@ def main():
     """
     args = paramtools.read_args()
 
-    print(utils.intro)
-
     masks = inventory.run(args)
-    if args.inventory_only or args.objectid == 'inventory':
+    if args.inventory_only or args.objectid == 'inventory' \
+            or can_reduce is False:
         print()
         return
+
+    print(utils.intro)
 
     # after running the inventory, the bias has been linked to the
     # working directory. Again, this should be removed once issue #11
