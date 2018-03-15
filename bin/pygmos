@@ -18,13 +18,14 @@ if sys.version_info[0] == 2:
     from iraf import gmos
     can_reduce = True
 else:
+    from platform import python_version
     import warnings
     warning_py36 = \
         'You are using Python {0}. Due to IRAF/PyRAF system requirements,' \
         ' the data reduction capabilities of pygmos are only available for' \
         ' Python 2.7 versions. You may still use the inventory and plotting' \
-        ' routines of pygmos.'.format('.'.join(sys.version_info))
-        warnings.warn(warning_py36)
+        ' routines of pygmos.'.format(python_version())
+    warnings.warn(warning_py36)
     can_reduce = False
 
 """
@@ -32,9 +33,9 @@ PyGMOS
 """
 
 # Other packages provided with the code
+from pygmos import inventory, paramtools
 if can_reduce:
-    from pygmos import (check_gswave, inventory, paramtools, reduction, tasks,
-                        utils)
+    from pygmos import check_gswave, reduction, tasks, utils
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment

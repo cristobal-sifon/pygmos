@@ -4,8 +4,6 @@ import argparse
 import sys
 from os import environ
 from os.path import abspath, dirname, join, split
-from pyraf import iraf
-
 
 
 def dump_file(infile):
@@ -65,8 +63,8 @@ def parse_args():
     # mandatory arguments
     add('objectid',
         help='Object name as given in the FITS file header. If the' \
-             ' object name contains spaces, replace them by' \
-             ' underscores ("_"). To search all available objects,' \
+             ' object name contains spaces, enclose the name with' \
+             ' quotation marks. To search all available objects,' \
              ' use "inventory" as the object name. This will run the' \
              ' inventory searching all available objects and exit.')
     # optional arguments

@@ -2,6 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import logging
 import os
 import sys
 try:
@@ -11,6 +12,8 @@ except ImportError:
 from glob import glob
 
 from . import utils
+
+logger = logging.getLogger(__name__)
 
 
 def assoc(target, program, bias, path='./', verbose=True):
@@ -52,7 +55,7 @@ def find_masks(files, target, program, bias):
         if head['OBSCLASS'] != 'science':
             continue
         # finally, is it the right object?
-        obj = head['OBJECT'].replace(' ', '_')
+        obj = head['OBJECT']
         if target == 'inventory' or obj == target:
             obsid = head['OBSID']
             wave = head['CENTWAVE']
@@ -71,7 +74,12 @@ def find_masks(files, target, program, bias):
     # `masks` are no longer used within the inventory
     # except to pass them to the main program for data reduction
     if target != 'inventory':
-        masks = masks[target]
+        try:
+            masks = masks[target] # this
+        except KeyError:
+            msg = 'No files found for object {0}.\n'.format(target)
+            logger.error(msg)
+            raise
     return exp, masks
 
 
