@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 
 from astropy.io import fits as pyfits
 import os
-from time import time
+from time import sleep, time
 
 from pyraf import iraf
 from iraf import gemini
@@ -25,7 +25,7 @@ def call_gdisplay(args, image, frame):
 
 
 def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
-                fl_inter='no', fl_answer='no'):
+                fl_inter='no', fl_answer='no', fl_cut='no'):
     output = '{0}_flat'.format(flat)
     comb = '{0}_comb'.format(flat)
     if utils.skip(args, 'flat'):
@@ -35,8 +35,10 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
     bias = args.bias
     if args.nobias:
         fl_bias = ('no' if bias == '' else 'yes')
-    gmos.gsflat(flat, output, combflat=comb, bias=bias, fl_bias=fl_bias,
-                fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer)
+    gmos.gsflat(
+        flat, output, combflat=comb, bias=bias, fl_bias=fl_bias,
+        fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer,
+        fl_cut=fl_cut)
     if gmos.gsflat.fl_detec == 'yes':
         new_output = utils.add_prefix(output, gmos.gmosaic)
         new_comb = utils.add_prefix(comb, gmos.gmosaic)
@@ -270,6 +272,73 @@ def call_gsextract(args, mask):
     print('-' * 30)
     return out
 
+
+def create_gradimage(args, img, bias, suff='grad'):
+    """
+    `img` should be the raw flat, on which we do everything needed to
+    produce a gradient image
+    """
+    # for ds9 to open
+    sleep(15)
+
+    output = {'gsreduce': utils.add_prefix(img, gmos.gsreduce)}
+    #if utils.skip(args, 'gradimage'):
+        #return output['gsreduce']
+    utils.remove_previous_files(img)
+    # for now
+    bias = args.bias
+    if args.nobias:
+        fl_bias = ('no' if bias == '' else 'yes')
+    else:
+        fl_bias = 'yes'
+    # bias+overscan subtraction
+    #gmos.gsreduce(
+        #img, bias=bias, fl_bias=fl_bias, fl_over='yes', fl_trim='yes',
+        #fl_gscrrej='no', fl_dark='no', fl_flat='no', fl_gmosaic='no',
+        #fl_fixpix='no', fl_gsappw='no', fl_cut='no', fl_vardq='yes')
+    # mosaic the b+o subtracted GCAL flat
+    output['gmosaic'] = utils.add_prefix(output['gsreduce'], gmos.gmosaic)
+    #gmos.gmosaic(output['gsreduce'], fl_vardq='yes', fl_clean='no')
+    # cut the slits
+    output['gscut'] = utils.add_prefix(output['gmosaic'], 'c')
+    secfile = '{0}.sec'.format(output['gscut'])
+    #gmos.gscut(output['gmosaic'], outimage=output['gscut'], secfile=secfile,
+               #fl_vardq='no')
+    # this is the name of the gradimage to be used for the rest of the pipeline
+    gradimage = output['gscut']
+    if suff:
+        gradimage = '{0}_{1}'.format(output['gscut'], suff)
+    # inspect the result of gscut
+    if not args.ds9:
+        return gradimage
+    #question = "Are you happy with the output of gscut? [Y/n] "
+    question = "Please check whether you like the result of gscut. If you" \
+               " do not, then please modify the SECY1 and SECY2 entries for" \
+               " the faulty slits (e.g., with fv) and press any key when you" \
+               " are ready. The new slit locations will be plotted and you" \
+               " will be prompted to confirm whether you are happy."
+    repeat_question = "Sorry, cannot understand answer. {0}".format(question)
+    #unhappy = "Sorry about that. Please modify the SECY1 and SECY2 entries" \
+              #" for the faulty slits (e.g., with fv) and check the new slit" \
+              #" positions. Once you are done, press any key to display the" \
+              #" slit positions again."
+    gscut_approved = 'n'
+    # run as many times as necessary for the user to be happy
+    print('Now inspecting gscut')
+    while gscut_approved.lower() not in ('y', 'yes'):
+        iraf.inspect_gscut(output['gscut'], output['gmosaic'], secfile)
+        gscut_approved = raw_input(question)
+        if gscut_approved == '':
+            gscut_approved = 'y'
+        while gscut_approved.lower() not in ('y', 'yes', 'n', 'no'):
+            gscut_approved(repeat_question)
+            if gscut_approved == '':
+                gscut_approved = 'y'
+        if gscut_approved.lower() in ('n', 'no'):
+            print(unhappy)
+    print("Great! Moving on.\n")
+
+    return gradimage
 
 def cut_spectra(args, mask, spec='1d'):
     """

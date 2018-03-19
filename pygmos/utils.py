@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
+import six
 import sys
 from glob import glob
 try:
@@ -43,8 +44,10 @@ intro = """
 """
 
 def add_prefix(filename, task):
+    outpref = (task if isinstance(task, six.string_types) else task.outpref)
     tree = filename.split('/')
-    tree[-1] = task.outpref + tree[-1]
+    #tree[-1] = task.outpref + tree[-1]
+    tree[-1] = outpref + tree[-1]
     return os.path.join(*tree)
 
 

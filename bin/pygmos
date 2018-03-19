@@ -45,6 +45,8 @@ os.environ['pygmos_path'] = pygmos_path
 
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
 if can_reduce:
+    iraf.task(inspect_gscut=os.path.join(
+        pygmos_path, 'pygmos', 'inspect_gscut.cl'))
     iraf.task(lacos_spec=os.path.join(pygmos_path, 'pygmos', 'lacos_spec.cl'))
 
 
@@ -82,7 +84,7 @@ def main():
     if args.align:
         iraf.task(align=os.path.join(pygmos_path, 'align.cl'))
 
-    assoc = '{0}.assoc'.format(args.objectid)
+    assoc = '{0}.assoc'.format(args.objectid.replace(' ', '_'))
     waves = utils.get_wavelengths(assoc)
     print('\nObject:', args.objectid)
 

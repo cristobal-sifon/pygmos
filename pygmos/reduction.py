@@ -12,7 +12,7 @@ def longslit(args, waves, assoc):
     """Reduce longslit data"""
     combine = []
     mask = 'longslit'
-    path = os.path.join(args.objectid.replace(' ', '_'), mask)
+    path = os.path.join(args.objectid, mask).replace(' ', '_')
 
     for wave in waves:
         flat = utils.get_file(assoc, mask, obs='flat', wave=wave)
@@ -61,7 +61,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
     Nmasks = 0
     combine = []
     print('Mask {0}'.format(mask), end=2*'\n')
-    path = os.path.join(args.objectid, mask)
+    path = os.path.join(args.objectid, mask).replace(' ', '_')
 
     # for now
     bias = args.bias
@@ -83,6 +83,10 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         arc = utils.get_file(
             assoc, science, mask, obs='arc', wave=files_science[science])
         iraf.chdir(path)
+
+        # first gsreduce the flat to create the gradient image for gscut
+        gradimage = tasks.create_gradimage(args, flat, bias)
+        sys.exit()
 
         flat, comb = tasks.call_gsflat(args, flat)
         arc = tasks.call_gsreduce(args, arc, flat, bias, comb)
