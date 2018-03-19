@@ -308,13 +308,22 @@ def create_gradimage(args, img, bias, suff='grad'):
     gradimage = output['gscut']
     if suff:
         gradimage = '{0}_{1}'.format(output['gscut'], suff)
+    if os.path.isfile('{0}.fits'.format(gradimage)):
+        rewrite = 'x'
+        while rewrite.lower() not in ('y', 'yes', 'n', 'no'):
+            rewrite = raw_input(
+                "Gradient image {0}.fits already exists. Are you" \
+                " sure you want to overwrite it? [y/N]")
+        if rewrite.lower() in ('n', 'no'):
+            return gradimage
+
     # inspect the result of gscut
     if not args.ds9:
         return gradimage
     #question = "Are you happy with the output of gscut? [Y/n] "
     question = "Please check whether you like the result of gscut. If you" \
                " do not, then please modify the SECY1 and SECY2 entries for" \
-               " the faulty slits (e.g., with fv) and press any key when you" \
+               " the faulty slits (e.g., with fv) and press any key when yo u" \
                " are ready. The new slit locations will be plotted and you" \
                " will be prompted to confirm whether you are happy."
     repeat_question = "Sorry, cannot understand answer. {0}".format(question)
@@ -337,7 +346,7 @@ def create_gradimage(args, img, bias, suff='grad'):
         if gscut_approved.lower() in ('n', 'no'):
             print(unhappy)
     print("Great! Moving on.\n")
-
+    os.system('cp -p {0}.fits {1}.fits'.format(output['gscut'], gradimage))
     return gradimage
 
 def cut_spectra(args, mask, spec='1d'):
