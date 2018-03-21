@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
+from glob import glob
+import os
+import shutil
 import sys
 from os import environ
 from os.path import abspath, dirname, join, split
@@ -26,6 +29,55 @@ def dump_file(infile):
                 print(f.read(), file=outfile, end='')
             sys.exit()
     return DumpFile
+
+
+def copy_file(infile, target, force=False):
+    """
+    Copy file from the pygmos root directory into the local directory
+
+    Adapted from
+    https://docs.python.org/3/library/argparse.html#action and
+    https://goo.gl/BWfK5Y
+
+    """
+    class CopyFile(argparse.Action):
+        """
+        If `infile` represents more than one file (e.g. through
+        wildcards) then target must be a directory.
+
+        Note that the target directory (if applicable) must exist
+
+        """
+        def __call__(self, parser, args, values, option_string=None):
+            self.infile = infile
+            self.target = target
+            self.force = force
+            self.files = sorted(glob(self.infile))
+            if self.target[0] != '/':
+                self.target = os.path.join(
+                    os.path.abspath(os.getcwd()), self.target)
+            self._assert_target()
+            print('Copying the following file(s) to {0}:'.format(target))
+            for file in self.files:
+                print('   {0}'.format(file))
+                outfile = self._format_target(os.path.split(file)[1])
+                if self.force or not os.path.isfile(outfile):
+                    shutil.copy(file, outfile)
+                elif os.path.isfile(outfile):
+                    raise OSError('File already exists')
+            sys.exit()
+
+        def _assert_target(self):
+            assert os.path.isdir(self.target) or len(self.files) == 1, \
+                'If trying to copy more than one file, please make sure' \
+                'that `target` is a directory.'
+
+        def _format_target(self, file):
+            if os.path.isdir(self.target):
+                return os.path.join(self.target, file)
+            return self.target
+
+    return CopyFile
 
 
 def read_iraf_params(args):
@@ -109,12 +161,16 @@ def parse_args():
     # dump files
     add('-d', dest='dump_file', nargs='?', default=None,
         help='Dump a sample parameter file to the console or to a file',
-        action=dump_file(join(environ['pygmos_path'], 'docs',
-                              'pygmos.params')))
+        action=dump_file(join(
+            environ['pygmos_path'], 'docs', 'pygmos.params')))
     add('-dd', dest='dump_file_extended', nargs='?', default=None,
         help='Dump an extended parameter file to the console or to a file',
-        action=dump_file(join(environ['pygmos_path'],
-                              'docs', 'pygmos.params.extended')))
+        action=dump_file(join(
+            environ['pygmos_path'], 'docs', 'pygmos.params.extended')))
+    add('-q', '--copy-query', dest='copy_query', nargs='?', default=None,
+        help='Copy GMOS query files to the local directory',
+        action=copy_file(join(
+            environ['pygmos_path'], 'examples', '*.py'), './'))
 
     return parser
 
