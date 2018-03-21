@@ -192,8 +192,8 @@ def mkDbTable(db, tableName, fields, storage):
     #cursor.execute('''PRAGMA foreign_keys = 1''')
 
     # Table of observations
-    entries = ', '.join(' '.join(zip(fields, storage)[i]) for i in 
-range(len(fields)))
+    entries = ', '.join(' '.join(zip(fields, storage)[i])
+                        for i in range(len(fields)))
     sql = '''CREATE TABLE IF NOT EXISTS %s(%s)
         ''' % (tableName, entries)
     cursor.execute(sql)

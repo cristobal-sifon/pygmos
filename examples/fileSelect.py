@@ -6,11 +6,9 @@ import glob, os
 import sqlite3
 import sys
 
-APERTURES = ['None', '0.5arcsec', '0.75arcsec', '1.0arcsec', '1.5arcsec', 
-'2.0arcsec',
-             '5.0arcsec', 'NS0.75arcsec', 'NS1.0arcsec', 'NS1.5arcsec', 
-'NS2.0arcsec',
-             'IFU-2', 'IFU-B', 'IFU-R']
+APERTURES = ['None', '0.5arcsec', '0.75arcsec', '1.0arcsec', '1.5arcsec',
+             '2.0arcsec', '5.0arcsec', 'NS0.75arcsec', 'NS1.0arcsec',
+             'NS1.5arcsec', 'NS2.0arcsec', 'IFU-2', 'IFU-B', 'IFU-R']
 BINFACTORS = ['1 1', '1 2', '1 4', '2 1', '2 2', '2 4', '4 1', '4 2', '4 4']
 DISPERSERS = ['MIRROR', 'B600', 'B1200', 'R150', 'R400', 'R831']
 FILELIST_TYPES = ['bias', 'dark', 'GCALflat', 'twiflat', 'arc', 'science']
@@ -221,8 +219,8 @@ def mkFileList(argv):
                         help='Class of observation')
     parser.add_argument('-d', '--DateObs',
                         default='*', type=str,
-                        help='Calendar date range of exposures 
-(yyyy-mm-dd:yyyy-mm-dd)')
+                        help='Calendar date range of exposures' \
+                             ' (yyyy-mm-dd:yyyy-mm-dd)')
     parser.add_argument('-e', '--Exposure', type=str,
                         help='File name of exposure')
     parser.add_argument('-f', '--Filter', choices=FILTERS,
