@@ -49,13 +49,14 @@ setup(
     #packages=['pygmos'],
     packages=['pygmos', 'pygmos.inventory', 'pygmos.plotting',
               'pygmos.spectroscopy'],
-    package_data={'pygmos': ['*.cl'],
-                  'examples': ['*.py']},
+    package_data={'pygmos': ['*.cl']},
     scripts=['bin/pygmos'],
     data_files=[('docs', ['docs/pygmos.hlp',
                           'docs/pygmos.params',
                           'docs/pygmos.params.extended',
                           'README.md']),
-                ('data', ['data/CuAr_GMOS.dat'])],
+                ('data', ['data/CuAr_GMOS.dat']),
+                ('examples', ['examples/gmos_img_proc.py',
+                              'examples/obslog.py'])],
     zip_safe=False
     )

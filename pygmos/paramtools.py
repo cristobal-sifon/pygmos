@@ -170,8 +170,7 @@ def parse_args():
     add('-q', '--copy-query', dest='copy_query', nargs='?', default=None,
         help='Copy GMOS query files to the local directory',
         action=copy_file(join(
-            environ['pygmos_path'], 'examples', '*.py'), './'))
-
+            os.path.split(environ['pygmos_path'])[0], 'examples', '*.py'), './'))
     return parser
 
 
