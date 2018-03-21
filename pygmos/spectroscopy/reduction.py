@@ -5,7 +5,8 @@ import sys
 from time import sleep
 from pyraf import iraf
 
-from . import check_gswave, tasks, utils
+from . import check_gswave, tasks
+from .. import  utils
 from ..inventory import inventory
 
 

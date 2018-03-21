@@ -14,7 +14,7 @@ from iraf import gemini
 from iraf import gemtools
 from iraf import gmos
 
-from . import utils
+from .. import utils
 
 
 def call_gdisplay(args, image, frame):

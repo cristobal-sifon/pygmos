@@ -33,9 +33,11 @@ PyGMOS
 """
 
 # Other packages provided with the code
-from pygmos import inventory, paramtools
+from pygmos import paramtools
+from pygmos.inventory import inventory
 if can_reduce:
-    from pygmos import check_gswave, reduction, tasks, utils
+    from pygmos import utils
+    from pygmos.spectroscopy import check_gswave, reduction, tasks
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
@@ -48,6 +50,7 @@ if can_reduce:
     iraf.task(inspect_gscut=os.path.join(
         pygmos_path, 'pygmos', 'inspect_gscut.cl'))
     iraf.task(lacos_spec=os.path.join(pygmos_path, 'pygmos', 'lacos_spec.cl'))
+
 
 
 def main():
