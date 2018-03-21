@@ -220,3 +220,36 @@ def run(args):
 
     return masks
 
+
+def get_file(assoc, science, mask=1, obs='science', wave=670):
+    assocfile = open(assoc)
+    while assocfile.readline()[0] == '#':
+        pass
+    for line in assocfile:
+        if line[0] == '#':
+            continue
+        line = line.split()
+        if len(line) < 7:
+            continue
+        if mask == 'longslit':
+            if int(line[2]) == wave and line[4] == science:
+                if obs == 'science':
+                    return line[4]
+                if obs == 'flat':
+                    return line[5]
+                if obs == 'arc' or obs == 'lamp':
+                    return line[6]
+                else:
+                    print('Unknown observation type in get_file(). Exiting')
+                    sys.exit()
+        elif line[1] == mask and int(line[2]) == wave and line[4] == science:
+                if obs == 'science':
+                    return line[4]
+                if obs == 'flat':
+                    return line[5]
+                if obs == 'arc' or obs == 'lamp':
+                    return line[6]
+                else:
+                    print('Unknown observation type in get_file(). Exiting')
+                    sys.exit()
+    return
