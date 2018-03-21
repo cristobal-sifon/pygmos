@@ -56,7 +56,8 @@ setup(
                           'docs/pygmos.params.extended',
                           'README.md']),
                 ('data', ['data/CuAr_GMOS.dat']),
-                ('examples', ['examples/gmos_img_proc.py',
+                ('examples', ['examples/fileSelect.py',
+                              'examples/gmos_img_proc.py',
                               'examples/obslog.py'])],
     zip_safe=False
     )
