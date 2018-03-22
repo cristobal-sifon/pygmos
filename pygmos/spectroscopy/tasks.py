@@ -280,74 +280,113 @@ def create_gradimage(args, img, bias, suff='grad'):
     """
     # for ds9 to open
     sleep(15)
-
+    # output file names
     output = {'gsreduce': utils.add_prefix(img, gmos.gsreduce)}
-    #if utils.skip(args, 'gradimage'):
-        #return output['gsreduce']
-    utils.remove_previous_files(img)
-    # for now
-    bias = args.bias
-    if args.nobias:
-        fl_bias = ('no' if bias == '' else 'yes')
-    else:
-        fl_bias = 'yes'
-    # bias+overscan subtraction
-    #gmos.gsreduce(
-        #img, bias=bias, fl_bias=fl_bias, fl_over='yes', fl_trim='yes',
-        #fl_gscrrej='no', fl_dark='no', fl_flat='no', fl_gmosaic='no',
-        #fl_fixpix='no', fl_gsappw='no', fl_cut='no', fl_vardq='yes')
-    # mosaic the b+o subtracted GCAL flat
     output['gmosaic'] = utils.add_prefix(output['gsreduce'], gmos.gmosaic)
-    #gmos.gmosaic(output['gsreduce'], fl_vardq='yes', fl_clean='no')
-    # cut the slits
     output['gscut'] = utils.add_prefix(output['gmosaic'], 'c')
     secfile = '{0}.sec'.format(output['gscut'])
-    #gmos.gscut(output['gmosaic'], outimage=output['gscut'], secfile=secfile,
-               #fl_vardq='no')
     # this is the name of the gradimage to be used for the rest of the pipeline
     gradimage = output['gscut']
     if suff:
         gradimage = '{0}_{1}'.format(output['gscut'], suff)
+
+    # cut the slits
+    # if the cut image or grad image exist, no need to do anything else
     if os.path.isfile('{0}.fits'.format(gradimage)):
         rewrite = 'x'
+        rewrite = raw_input(
+            "Gradient image {0}.fits already exists. Are you" \
+            " sure you want to overwrite it? [y/N] ")
+        if not rewrite:
+            rewrite = 'n'
         while rewrite.lower() not in ('y', 'yes', 'n', 'no'):
             rewrite = raw_input(
-                "Gradient image {0}.fits already exists. Are you" \
-                " sure you want to overwrite it? [y/N]")
+                'Sorry, could not understand. Please type "yes" or "no",' \
+                ' or simply press Enter to skip. ')
+            if not rewrite:
+                rewrite = 'n'
         if rewrite.lower() in ('n', 'no'):
             return gradimage
+    cut_again = 'x'
+    if os.path.isfile('{0}.fits'.format(output['gscut'])):
+        cut_again = raw_input(
+            'File {0}.fits already exists. Write "yes" if you want to run' \
+            ' gscut again instead of using the existing file (which you' \
+            ' will be able to review and modify in the next step).' \
+            ' Otherwise, please write "no" or simply press Enter to' \
+            ' skip'.format(output['gscut']))
+        if not cut_again:
+            cut_again = 'n'
+        while cut_again not in ('y', 'yes', 'n', 'no'):
+            cut_again = raw_input(
+                'Sorry, could not understand. Please type "yes" or "no",' \
+                ' or simply press Enter to skip. ')
+            if not cut_again:
+                cut_again = 'n'
+    else:
+        cut_again = 'yes'
+
+    if cut_again in ('y', 'yes'):
+        # for now
+        bias = args.bias
+        if args.nobias:
+            fl_bias = ('no' if bias == '' else 'yes')
+        else:
+            fl_bias = 'yes'
+        # bias+overscan subtraction
+        if os.path.isfile(output['gsreduce']):
+            os.remove(output['gsreduce'])
+        gmos.gsreduce(
+            img, bias=bias, fl_bias=fl_bias, fl_over='yes', fl_trim='yes',
+            fl_gscrrej='no', fl_dark='no', fl_flat='no', fl_gmosaic='no',
+            fl_fixpix='no', fl_gsappw='no', fl_cut='no', fl_vardq='yes')
+        # mosaic the b+o subtracted GCAL flat
+        if os.path.isfile(output['gmosaic']):
+            os.remove(output['gmosaic'])
+        gmos.gmosaic(output['gsreduce'], fl_vardq='yes', fl_clean='no')
+        # cut the slits
+        if os.path.isfile(output['gscut']):
+            os.remove(output['gscut'])
+        gmos.gscut(output['gmosaic'], outimage=output['gscut'],
+                   secfile=secfile, fl_vardq='no')
 
     # inspect the result of gscut
     if not args.ds9:
+        msg = 'You requested no ds9 session. Cannot inspect gscut results.'
+        print(msg)
         return gradimage
-    #question = "Are you happy with the output of gscut? [Y/n] "
-    question = "Please check whether you like the result of gscut. If you" \
-               " do not, then please modify the SECY1 and SECY2 entries for" \
-               " the faulty slits (e.g., with fv) and press any key when yo u" \
-               " are ready. The new slit locations will be plotted and you" \
-               " will be prompted to confirm whether you are happy."
-    repeat_question = "Sorry, cannot understand answer. {0}".format(question)
-    #unhappy = "Sorry about that. Please modify the SECY1 and SECY2 entries" \
-              #" for the faulty slits (e.g., with fv) and check the new slit" \
-              #" positions. Once you are done, press any key to display the" \
-              #" slit positions again."
+
+    msg_hold = \
+        "Please check whether you like the result of gscut. If you\n" \
+        " do not, then please modify the SECY1 and SECY2 entries\n" \
+        " for the faulty slits (e.g., with fv) and press Enter\n" \
+        " when you are ready. The new slit locations will be plotted\n" \
+        " and you will be prompted again to confirm whether you are happy."
+    msg_ready = \
+        "Do you want to keep the current slits? [y/N] "
+    msg_repeat = "Sorry, cannot understand answer. {0}".format(msg_ready)
+    msg_unhappy = "Sorry about that. Please edit the slits again."
     gscut_approved = 'n'
     # run as many times as necessary for the user to be happy
     print('Now inspecting gscut')
     while gscut_approved.lower() not in ('y', 'yes'):
         iraf.inspect_gscut(output['gscut'], output['gmosaic'], secfile)
-        gscut_approved = raw_input(question)
+        # this one just waits for any key strike
+        raw_input(msg_hold)
+        gscut_approved = raw_input(msg_ready)
         if gscut_approved == '':
             gscut_approved = 'y'
         while gscut_approved.lower() not in ('y', 'yes', 'n', 'no'):
-            gscut_approved(repeat_question)
+            gscut_approved(msg_repeat)
             if gscut_approved == '':
                 gscut_approved = 'y'
         if gscut_approved.lower() in ('n', 'no'):
-            print(unhappy)
+            print(msg_unhappy)
+        print()
     print("Great! Moving on.\n")
     os.system('cp -p {0}.fits {1}.fits'.format(output['gscut'], gradimage))
     return gradimage
+
 
 def cut_spectra(args, mask, spec='1d'):
     """

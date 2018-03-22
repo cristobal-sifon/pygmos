@@ -42,17 +42,14 @@ if can_reduce:
 pygmos_path = os.path.dirname(os.path.split(
     inventory.__file__.replace('inventory.pyc', ''))[0])
 os.environ['pygmos_path'] = pygmos_path
-print(pygmos_path)
 
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
 if can_reduce:
-    iraf.task(inspect_gscut=os.path.join(
-        pygmos_path, 'pygmos', 'cl', 'inspect_gscut.cl'))
-    iraf.task(lacos_spec=os.path.join(
-        pygmos_path, 'pygmos', 'cl', 'lacos_spec.cl'))
-print(os.path.isfile(os.path.join(pygmos_path, 'cl', 'lacos_spec.cl')))
+    iraf.task(
+        inspect_gscut=os.path.join(pygmos_path, 'cl', 'inspect_gscut.cl'))
+    iraf.task(
+        lacos_spec=os.path.join(pygmos_path, 'cl', 'lacos_spec.cl'))
 
-sys.exit()
 
 def main():
     """

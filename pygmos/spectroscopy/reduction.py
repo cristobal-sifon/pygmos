@@ -17,11 +17,11 @@ def longslit(args, waves, assoc):
     path = os.path.join(args.objectid, mask).replace(' ', '_')
 
     for wave in waves:
-        flat = inventory.get_files(assoc, mask, obs='flat', wave=wave)
+        flat = inventory.get_file(assoc, mask, obs='flat', wave=wave)
         # finding the flat is enough to know that the mask exists.
         if flat:
-            arc = inventory.get_files(assoc, mask, obs='arc', wave=wave)
-            science = inventory.get_files(assoc, mask, obs='science', wave=wave)
+            arc = inventory.get_file(assoc, mask, obs='arc', wave=wave)
+            science = inventory.get_file(assoc, mask, obs='science', wave=wave)
             iraf.chdir(path)
             flat, comb = tasks.call_gsflat(args, flat)
             arc = tasks.call_gsreduce(args, arc, flat, args.bias, comb)
@@ -73,7 +73,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         raise ValueError('Empty variable `files_science`')
 
     for science in files_science:
-        flat = inventory.get_files(
+        flat = inventory.get_file(
             assoc, science, mask, obs='flat', wave=files_science[science])
         # finding the flat is enough to know that the mask exists.
         if not flat:
@@ -82,7 +82,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
             continue
         # all observations add up to 1
         Nmasks += 1 / len(files_science.keys())
-        arc = inventory.get_files(
+        arc = inventory.get_file(
             assoc, science, mask, obs='arc', wave=files_science[science])
         iraf.chdir(path)
 
@@ -143,7 +143,7 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
 
     darks = utils.get_darks()
     for science in files_science.keys():
-        arc = inventory.get_files(
+        arc = inventory.get_file(
             assoc, science, mask, obs='arc',
             wave=files_science[science])
         # finding the arc is enough to know that the mask exists.
@@ -153,7 +153,7 @@ def ns(args, cluster, mask, files_science, assoc, cutdir,
             continue
         # all observations sum to 1
         Nmasks += 1 / len(files_science.keys())
-        #arc = inventory.get_files(
+        #arc = inventory.get_file(
             #assoc, science, mask, obs='arc', wave=files_science[science])
         #utils.copy_MDF(science, args.objectid, str(mask))
         iraf.chdir(path)
