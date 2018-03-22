@@ -7,14 +7,14 @@ from __future__ import absolute_import, division, print_function
 
 from astropy.io import fits as pyfits
 import os
-from time import time
+from time import sleep, time
 
 from pyraf import iraf
 from iraf import gemini
 from iraf import gemtools
 from iraf import gmos
 
-from . import utils
+from ..utilities import utils
 
 
 def call_gdisplay(args, image, frame):
@@ -28,15 +28,16 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
                 fl_inter='no', fl_answer='no'):
     output = '{0}_flat'.format(flat)
     comb = '{0}_comb'.format(flat)
-    if utils.skip(args, 'flat'):
+    if utils.skip(args, 'flat', output):
         return output, comb
     utils.remove_previous_files(flat, filetype='flat')
     # for now
     bias = args.bias
     if args.nobias:
         fl_bias = ('no' if bias == '' else 'yes')
-    gmos.gsflat(flat, output, combflat=comb, bias=bias, fl_bias=fl_bias,
-                fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer)
+    gmos.gsflat(
+        flat, output, combflat=comb, bias=bias, fl_bias=fl_bias,
+        fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer)
     if gmos.gsflat.fl_detec == 'yes':
         new_output = utils.add_prefix(output, gmos.gmosaic)
         new_comb = utils.add_prefix(comb, gmos.gmosaic)
@@ -54,7 +55,7 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
 def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
                   fl_bias='yes', fl_over='yes'):
     output = utils.add_prefix(img, gmos.gsreduce)
-    if utils.skip(args, 'reduce'):
+    if utils.skip(args, 'reduce', output):
         return output
     utils.remove_previous_files(img)
     # for now
@@ -64,8 +65,9 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
     if mode == 'regular':
         if flat:
             gmos.gsreduce(
-                img, gradimage=grad, flatim=flat, bias=bias, fl_bias=fl_bias,
-                fl_over=fl_over)
+                img, flatim=flat, bias=bias, fl_bias=fl_bias, fl_over=fl_over,
+                refimage=grad)
+                #gradimage=grad)
         # will happen when gsreducing the arcs and the first pass
         # of N&S science data
         else:
@@ -86,7 +88,9 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
 
 def call_lacos(args, science, Nslits=0, longslit=False):
     outfile = '{0}_lacos.fits'.format(science)
-    if utils.skip(args, 'lacos'):
+    #if os.path.isfile(outfile):
+        #os.remove(outfile)
+    if utils.skip(args, 'lacos', outfile):
         return outfile[:-5]
     print()
     print('-' * 30)
@@ -96,9 +100,13 @@ def call_lacos(args, science, Nslits=0, longslit=False):
     head = pyfits.getheader(science + '.fits')
     gain = head['GAIN']
     rdnoise = head['RDNOISE']
-    utils.delete(outfile)
+    #utils.delete(outfile)
+    if os.path.isfile(outfile):
+        iraf.imdelete(outfile)
     os.system('cp  -p ' + science + '.fits ' +  outfile)
+    utils.removedir('slits')
     utils.makedir('slits')
+    iraf.imcopy.unlearn()
     if longslit:
         slit = '{0}[sci,1]'.format(science)
         outslit = os.path.join('slits' '{0}_long'.format(science))
@@ -112,10 +120,14 @@ def call_lacos(args, science, Nslits=0, longslit=False):
             print('slit =', slit)
             outslit = os.path.join('slits', '{0}_{1}'.format(science, i))
             outmask = os.path.join('slits', '{0}_mask{1}'.format(science, i))
+            if os.path.isfile(outslit):
+                iraf.imdelete(outslit)
+            if os.path.isfile(outmask):
+                iraf.imdelete(outmask)
             iraf.lacos_spec(slit, outslit, outmask, gain=gain, readn=rdnoise)
             iraf.imcopy(
                 outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], i),
-                verbose='no')
+                verbose='yes')
     utils.delete('lacos*')
     utils.removedir('slits')
     print(outfile[:-5])
@@ -127,8 +139,8 @@ def call_lacos(args, science, Nslits=0, longslit=False):
 
 
 def call_gswave(args, arc):
-    if utils.skip(args, 'wavelength'):
-        return
+    #if utils.skip(args, 'wavelength'):
+        #return
     print('-' * 30)
     print('calling gswavelength on', arc)
     gmos.gswavelength(arc)
@@ -141,7 +153,7 @@ def call_gstransform(args, image, arc):
         out = gmos.gstransform.outpref + image[:-6]
     else:
         out = gmos.gstransform.outpref + image
-    if utils.skip(args, 'transform'):
+    if utils.skip(args, 'transform', out):
         return out
     print('-' * 30)
     print('calling gstransform')
@@ -169,7 +181,7 @@ def call_align(inimage, suffix, Nslits):
 
 def call_gsskysub(args, tgsfile, align=''):
     out = gmos.gsskysub.outpref + tgsfile + align
-    if utils.skip(args, 'skysub'):
+    if utils.skip(args, 'skysub', out):
         return out
     print('-' * 30)
     print('calling gsskysub')
@@ -185,7 +197,7 @@ def call_gsskysub(args, tgsfile, align=''):
 
 def call_gnsskysub(args, inimages):
     out = gmos.gnsskysub.outpref + inimages
-    if utils.skip(args, 'skysub'):
+    if utils.skip(args, 'skysub', out):
         return out
     print('-' * 30)
     print('calling gnsskysub')
@@ -203,7 +215,7 @@ def call_gnscombine(args, inimages, outimage=''):
     """
     if not outimage:
         outimage = 'nsc-' + args.objectid
-    if utils.skip(args, 'combine'):
+    if utils.skip(args, 'combine', outimage):
         return outimage
     print('-' * 30)
     print('calling gnscombine')
@@ -229,7 +241,7 @@ def call_imcombine(args, mask, im, path='./', Nslits=1, longslit=False):
         outimage = '{0}{1}{2}-{3}_{4}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
-    if utils.skip(args, 'combine'):
+    if utils.skip(args, 'combine', outimage):
         return outimage
     print('-' * 30)
     print('Combining images {0} --> {1}'.format(im, outimage))
@@ -260,7 +272,7 @@ def call_gsextract(args, mask):
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
     out = gmos.gsextract.outprefix + infile
-    if utils.skip(args, 'extract'):
+    if utils.skip(args, 'extract', out):
         return out
     print('-' * 30)
     print('calling gsextract')
@@ -269,6 +281,124 @@ def call_gsextract(args, mask):
     gmos.gsextract(infile)
     print('-' * 30)
     return out
+
+
+def create_gradimage(args, img, bias, suff='grad'):
+    """
+    `img` should be the raw flat, on which we do everything needed to
+    produce a gradient image
+    """
+    # output file names
+    output = {'gsreduce': utils.add_prefix(img, gmos.gsreduce)}
+    output['gmosaic'] = utils.add_prefix(output['gsreduce'], gmos.gmosaic)
+    output['gscut'] = utils.add_prefix(output['gmosaic'], 'c')
+    secfile = '{0}.sec'.format(output['gscut'])
+    # this is the name of the gradimage to be used for the rest of the pipeline
+    gradimage = output['gscut']
+    if suff:
+        gradimage = '{0}_{1}'.format(output['gscut'], suff)
+    if utils.skip(args, 'gradimage', gradimage):
+        return gradimage
+
+    # cut the slits
+    # if the cut image or grad image exist, no need to do anything else
+    if os.path.isfile('{0}.fits'.format(gradimage)):
+        rewrite = 'x'
+        rewrite = raw_input(
+            "Gradient image {0}.fits already exists. Are you" \
+            " sure you want to overwrite it? [y/N] ".format(gradimage))
+        if not rewrite:
+            rewrite = 'n'
+        while rewrite.lower() not in ('y', 'yes', 'n', 'no'):
+            rewrite = raw_input(
+                'Sorry, could not understand. Please type "yes" or "no",' \
+                ' or simply press Enter to skip. ')
+            if not rewrite:
+                rewrite = 'n'
+        if rewrite.lower() in ('n', 'no'):
+            print('Skipping.')
+            return gradimage
+    cut_again = 'x'
+    if os.path.isfile('{0}.fits'.format(output['gscut'])):
+        cut_again = raw_input(
+            'File {0}.fits already exists. Write "yes" if you want to run' \
+            ' gscut again instead of using the existing file (which you' \
+            ' will be able to review and modify in the next step).' \
+            ' Otherwise, please write "no" or simply press Enter to' \
+            ' skip'.format(output['gscut']))
+        if not cut_again:
+            cut_again = 'n'
+        while cut_again not in ('y', 'yes', 'n', 'no'):
+            cut_again = raw_input(
+                'Sorry, could not understand. Please type "yes" or "no",' \
+                ' or simply press Enter to skip. ')
+            if not cut_again:
+                cut_again = 'n'
+    else:
+        cut_again = 'yes'
+
+    if cut_again in ('y', 'yes'):
+        # for now
+        bias = args.bias
+        if args.nobias:
+            fl_bias = ('no' if bias == '' else 'yes')
+        else:
+            fl_bias = 'yes'
+        # bias+overscan subtraction
+        if os.path.isfile(output['gsreduce']):
+            os.remove(output['gsreduce'])
+        gmos.gsreduce(
+            img, bias=bias, fl_bias=fl_bias, fl_over='yes', fl_trim='yes',
+            fl_gscrrej='no', fl_dark='no', fl_flat='no', fl_gmosaic='no',
+            fl_fixpix='no', fl_gsappw='no', fl_cut='no', fl_vardq='yes')
+        # mosaic the b+o subtracted GCAL flat
+        if os.path.isfile(output['gmosaic']):
+            os.remove(output['gmosaic'])
+        gmos.gmosaic(output['gsreduce'], fl_vardq='yes', fl_clean='no')
+        # cut the slits
+        if os.path.isfile(output['gscut']):
+            os.remove(output['gscut'])
+        gmos.gscut(output['gmosaic'], outimage=output['gscut'],
+                   secfile=secfile, fl_vardq='no')
+
+    # inspect the result of gscut
+    if not args.ds9:
+        msg = 'You requested no ds9 session. Cannot inspect gscut results.'
+        print(msg)
+        return gradimage
+
+    msg_hold = \
+        "Please check whether you like the result of gscut. If you\n" \
+        " do not, then please modify the SECY1 and SECY2 entries\n" \
+        " for the faulty slits (e.g., with fv) and press Enter\n" \
+        " when you are ready. The new slit locations will be plotted\n" \
+        " and you will be prompted again to confirm whether you are happy."
+    msg_ready = \
+        "Do you want to keep the current slits? [y/N] "
+    msg_repeat = "Sorry, cannot understand answer. {0}".format(msg_ready)
+    msg_unhappy = "Sorry about that. Please edit the slits again."
+    gscut_approved = 'n'
+    # run as many times as necessary for the user to be happy
+    print('Now inspecting gscut')
+    if os.path.isfile(secfile):
+        os.remove(secfile)
+    while gscut_approved.lower() not in ('y', 'yes'):
+        iraf.inspect_gscut(output['gscut'], output['gmosaic'], secfile)
+        # this one just waits for any key strike
+        raw_input(msg_hold)
+        gscut_approved = raw_input(msg_ready)
+        if gscut_approved == '':
+            gscut_approved = 'y'
+        while gscut_approved.lower() not in ('y', 'yes', 'n', 'no'):
+            gscut_approved(msg_repeat)
+            if gscut_approved == '':
+                gscut_approved = 'y'
+        if gscut_approved.lower() in ('n', 'no'):
+            print(msg_unhappy)
+        print()
+    print("Great! Moving on.\n")
+    os.system('cp -p {0}.fits {1}.fits'.format(output['gscut'], gradimage))
+    return gradimage
 
 
 def cut_spectra(args, mask, spec='1d'):

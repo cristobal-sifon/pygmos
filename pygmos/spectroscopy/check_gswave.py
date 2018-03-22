@@ -12,7 +12,8 @@ import shutil
 from pyraf import iraf
 from iraf import tv
 
-from . import inventory, utils
+from ..utilities import utils
+from ..inventory import inventory
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment

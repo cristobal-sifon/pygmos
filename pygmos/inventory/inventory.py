@@ -11,7 +11,7 @@ except ImportError:
     from pyfits import getheader
 from glob import glob
 
-from . import utils
+from ..utilities import utils
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ def assoc(target, program, bias, path='./', verbose=True):
     for obj in exp:
         exp[obj] = find_exposures(files, exp[obj])
         # print file information to file
-        print_assoc(obj, exp[obj], bias, verbose=verbose)
-    return masks
+        assoc_file = print_assoc(obj, exp[obj], bias, verbose=verbose)
+    return masks, assoc_file
 
 
 def find_masks(files, target, program, bias):
@@ -67,7 +67,7 @@ def find_masks(files, target, program, bias):
                 exp[obj] = []
             if [obsid, mask, wave, exptime] not in exp[obj]:
                 if mask not in masks[obj]:
-                    newdir = os.path.join(obj, newdir)
+                    newdir = os.path.join(obj, newdir).replace(' ', '_')
                     utils.makedir(newdir)
                     masks[obj].append(mask)
                 exp[obj].append([obsid, mask, wave, exptime])
@@ -75,7 +75,7 @@ def find_masks(files, target, program, bias):
     # except to pass them to the main program for data reduction
     if target != 'inventory':
         try:
-            masks = masks[target] # this
+            masks = masks[target]
         except KeyError:
             msg = 'No files found for object {0}.\n'.format(target)
             logger.error(msg)
@@ -128,20 +128,20 @@ def generate(args, program, target, bias, path='./', verbose=True):
         print('#-' * 20 + '#\n')
     # will fix later
     bias = args.bias
-    masks = assoc(target, program, bias, path)
+    masks, assoc_file = assoc(target, program, bias, path)
     if verbose:
         print()
         print('#-' * 20 + '#')
         if target == 'inventory':
             print('Inventory ready. Look for *.assoc files')
         else:
-            print(' Inventory ready. Look for "{0}.assoc"'.format(target))
+            print(' Inventory ready. Look for "{0}.assoc"'.format(assoc_file))
         print('#-' * 20 + '#')
     return masks
 
 
 def print_assoc(obj, exp, bias, verbose=True):
-    output = '{0}.assoc'.format(obj)
+    output = '{0}.assoc'.format(obj.replace(' ', '_'))
     print('{0}\n-----'.format(output))
     out = open(output, 'w')
     head = '{0:<16s}  {1:<15s}  {2:<5s}  {3:<5s}' \
@@ -166,7 +166,7 @@ def print_assoc(obj, exp, bias, verbose=True):
         arc = exp[i][6] + '.fits'
         # just for clarity
         mask = exp[i][1]
-        os.chdir(os.path.join(obj, mask))
+        os.chdir(os.path.join(obj, mask).replace(' ', '_'))
         # copy MOS mask definition file
         if mask[:2] in ('GN', 'GS'):
             os.system('ln -sf ../../{0}.fits .'.format(mask))
@@ -220,3 +220,36 @@ def run(args):
 
     return masks
 
+
+def get_file(assoc, science, mask=1, obs='science', wave=670):
+    assocfile = open(assoc)
+    while assocfile.readline()[0] == '#':
+        pass
+    for line in assocfile:
+        if line[0] == '#':
+            continue
+        line = line.split()
+        if len(line) < 7:
+            continue
+        if mask == 'longslit':
+            if int(line[2]) == wave and line[4] == science:
+                if obs == 'science':
+                    return line[4]
+                if obs == 'flat':
+                    return line[5]
+                if obs == 'arc' or obs == 'lamp':
+                    return line[6]
+                else:
+                    print('Unknown observation type in get_file(). Exiting')
+                    sys.exit()
+        elif line[1] == mask and int(line[2]) == wave and line[4] == science:
+                if obs == 'science':
+                    return line[4]
+                if obs == 'flat':
+                    return line[5]
+                if obs == 'arc' or obs == 'lamp':
+                    return line[6]
+                else:
+                    print('Unknown observation type in get_file(). Exiting')
+                    sys.exit()
+    return

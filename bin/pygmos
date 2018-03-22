@@ -13,9 +13,7 @@ except ImportError:
 
 if sys.version_info[0] == 2:
     from pyraf import iraf
-    from iraf import gemini
-    from iraf import gemtools
-    from iraf import gmos
+    from iraf import gemini, gemtools, gmos
     can_reduce = True
 else:
     from platform import python_version
@@ -33,9 +31,11 @@ PyGMOS
 """
 
 # Other packages provided with the code
-from pygmos import inventory, paramtools
+from pygmos.inventory import inventory
+from pygmos.utilities import paramtools
 if can_reduce:
-    from pygmos import check_gswave, reduction, tasks, utils
+    from pygmos.spectroscopy import check_gswave, reduction, tasks
+    from pygmos.utilities import utils
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment
@@ -45,7 +45,10 @@ os.environ['pygmos_path'] = pygmos_path
 
 # Cosmic ray removal task (van Dokkum 2001, PASP, 113, 1420)
 if can_reduce:
-    iraf.task(lacos_spec=os.path.join(pygmos_path, 'pygmos', 'lacos_spec.cl'))
+    iraf.task(
+        inspect_gscut=os.path.join(pygmos_path, 'cl', 'inspect_gscut.cl'))
+    iraf.task(
+        lacos_spec=os.path.join(pygmos_path, 'cl', 'lacos_spec.cl'))
 
 
 def main():
@@ -82,7 +85,7 @@ def main():
     if args.align:
         iraf.task(align=os.path.join(pygmos_path, 'align.cl'))
 
-    assoc = '{0}.assoc'.format(args.objectid)
+    assoc = '{0}.assoc'.format(args.objectid.replace(' ', '_'))
     waves = utils.get_wavelengths(assoc)
     print('\nObject:', args.objectid)
 

@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
+import six
 import sys
 from glob import glob
 try:
@@ -43,8 +44,10 @@ intro = """
 """
 
 def add_prefix(filename, task):
+    outpref = (task if isinstance(task, six.string_types) else task.outpref)
     tree = filename.split('/')
-    tree[-1] = task.outpref + tree[-1]
+    #tree[-1] = task.outpref + tree[-1]
+    tree[-1] = outpref + tree[-1]
     return os.path.join(*tree)
 
 
@@ -105,52 +108,20 @@ def copy_MDF(science, cluster, mask):
 def delete(filename):
     ls = glob(filename)
     for filename in ls:
-        os.system('rm {0}'.format(filename))
+        os.remove(filename)
     return
 
 
-def skip(args, task_name):
+def skip(args, task_name, task_output):
     """Check whether a task should be skipped based on `args.begin`"""
-    tasks = ['flat', 'reduce', 'lacos', 'wavelength', 'transform', 'skysub',
-             'combine', 'extract']
+    tasks = ['gradimage', 'flat', 'reduce', 'lacos', 'wavelength', 'transform',
+             'skysub', 'combine', 'extract']
     i = tasks.index(task_name)
-    if args.begin in tasks[i+1:]:
+    if not task_output.endswith('.fits'):
+        task_output = '{0}.fits'.format(task_output)
+    if os.path.isfile(task_output) and args.begin in tasks[i+1:]:
         return True
     return False
-
-
-def get_file(assoc, science, mask=1, obs='science', wave=670):
-    assocfile = open(assoc)
-    while assocfile.readline()[0] == '#':
-        pass
-    for line in assocfile:
-        if line[0] == '#':
-            continue
-        line = line.split()
-        if len(line) < 7:
-            continue
-        if mask == 'longslit':
-            if int(line[2]) == wave and line[4] == science:
-                if obs == 'science':
-                    return line[4]
-                if obs == 'flat':
-                    return line[5]
-                if obs == 'arc' or obs == 'lamp':
-                    return line[6]
-                else:
-                    print('Unknown observation type in getFile(). Exiting')
-                    sys.exit()
-        elif line[1] == mask and int(line[2]) == wave and line[4] == science:
-                if obs == 'science':
-                    return line[4]
-                if obs == 'flat':
-                    return line[5]
-                if obs == 'arc' or obs == 'lamp':
-                    return line[6]
-                else:
-                    print('Unknown observation type in getFile(). Exiting')
-                    sys.exit()
-    return
 
 
 def get_nslits(filename):
