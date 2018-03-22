@@ -7,6 +7,7 @@ from os.path import abspath, dirname, join, split
 if sys.version_info[0] == 2:
     from pyraf import iraf
 
+
 def dump_file(infile):
     """
     Dump contents of file into output provided in the command line.
