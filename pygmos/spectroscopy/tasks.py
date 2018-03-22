@@ -14,7 +14,7 @@ from iraf import gemini
 from iraf import gemtools
 from iraf import gmos
 
-from .. import utils
+from ..utilities import utils
 
 
 def call_gdisplay(args, image, frame):
@@ -25,10 +25,10 @@ def call_gdisplay(args, image, frame):
 
 
 def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
-                fl_inter='no', fl_answer='no', fl_cut='no'):
+                fl_inter='no', fl_answer='no'):
     output = '{0}_flat'.format(flat)
     comb = '{0}_comb'.format(flat)
-    if utils.skip(args, 'flat'):
+    if utils.skip(args, 'flat', output):
         return output, comb
     utils.remove_previous_files(flat, filetype='flat')
     # for now
@@ -37,8 +37,7 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
         fl_bias = ('no' if bias == '' else 'yes')
     gmos.gsflat(
         flat, output, combflat=comb, bias=bias, fl_bias=fl_bias,
-        fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer,
-        fl_cut=fl_cut)
+        fl_over=fl_over, fl_inter=fl_inter, fl_answer=fl_answer)
     if gmos.gsflat.fl_detec == 'yes':
         new_output = utils.add_prefix(output, gmos.gmosaic)
         new_comb = utils.add_prefix(comb, gmos.gmosaic)
@@ -56,7 +55,7 @@ def call_gsflat(args, flat, bias='', fl_bias='yes', fl_over='yes',
 def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
                   fl_bias='yes', fl_over='yes'):
     output = utils.add_prefix(img, gmos.gsreduce)
-    if utils.skip(args, 'reduce'):
+    if utils.skip(args, 'reduce', output):
         return output
     utils.remove_previous_files(img)
     # for now
@@ -66,8 +65,9 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
     if mode == 'regular':
         if flat:
             gmos.gsreduce(
-                img, gradimage=grad, flatim=flat, bias=bias, fl_bias=fl_bias,
-                fl_over=fl_over)
+                img, flatim=flat, bias=bias, fl_bias=fl_bias, fl_over=fl_over,
+                refimage=grad)
+                #gradimage=grad)
         # will happen when gsreducing the arcs and the first pass
         # of N&S science data
         else:
@@ -88,7 +88,9 @@ def call_gsreduce(args, img, flat='', bias='', grad='', mode='regular',
 
 def call_lacos(args, science, Nslits=0, longslit=False):
     outfile = '{0}_lacos.fits'.format(science)
-    if utils.skip(args, 'lacos'):
+    #if os.path.isfile(outfile):
+        #os.remove(outfile)
+    if utils.skip(args, 'lacos', outfile):
         return outfile[:-5]
     print()
     print('-' * 30)
@@ -98,9 +100,13 @@ def call_lacos(args, science, Nslits=0, longslit=False):
     head = pyfits.getheader(science + '.fits')
     gain = head['GAIN']
     rdnoise = head['RDNOISE']
-    utils.delete(outfile)
+    #utils.delete(outfile)
+    if os.path.isfile(outfile):
+        iraf.imdelete(outfile)
     os.system('cp  -p ' + science + '.fits ' +  outfile)
+    utils.removedir('slits')
     utils.makedir('slits')
+    iraf.imcopy.unlearn()
     if longslit:
         slit = '{0}[sci,1]'.format(science)
         outslit = os.path.join('slits' '{0}_long'.format(science))
@@ -114,10 +120,14 @@ def call_lacos(args, science, Nslits=0, longslit=False):
             print('slit =', slit)
             outslit = os.path.join('slits', '{0}_{1}'.format(science, i))
             outmask = os.path.join('slits', '{0}_mask{1}'.format(science, i))
+            if os.path.isfile(outslit):
+                iraf.imdelete(outslit)
+            if os.path.isfile(outmask):
+                iraf.imdelete(outmask)
             iraf.lacos_spec(slit, outslit, outmask, gain=gain, readn=rdnoise)
             iraf.imcopy(
                 outslit, '{0}[SCI,{1},overwrite]'.format(outfile[:-5], i),
-                verbose='no')
+                verbose='yes')
     utils.delete('lacos*')
     utils.removedir('slits')
     print(outfile[:-5])
@@ -129,8 +139,8 @@ def call_lacos(args, science, Nslits=0, longslit=False):
 
 
 def call_gswave(args, arc):
-    if utils.skip(args, 'wavelength'):
-        return
+    #if utils.skip(args, 'wavelength'):
+        #return
     print('-' * 30)
     print('calling gswavelength on', arc)
     gmos.gswavelength(arc)
@@ -143,7 +153,7 @@ def call_gstransform(args, image, arc):
         out = gmos.gstransform.outpref + image[:-6]
     else:
         out = gmos.gstransform.outpref + image
-    if utils.skip(args, 'transform'):
+    if utils.skip(args, 'transform', out):
         return out
     print('-' * 30)
     print('calling gstransform')
@@ -171,7 +181,7 @@ def call_align(inimage, suffix, Nslits):
 
 def call_gsskysub(args, tgsfile, align=''):
     out = gmos.gsskysub.outpref + tgsfile + align
-    if utils.skip(args, 'skysub'):
+    if utils.skip(args, 'skysub', out):
         return out
     print('-' * 30)
     print('calling gsskysub')
@@ -187,7 +197,7 @@ def call_gsskysub(args, tgsfile, align=''):
 
 def call_gnsskysub(args, inimages):
     out = gmos.gnsskysub.outpref + inimages
-    if utils.skip(args, 'skysub'):
+    if utils.skip(args, 'skysub', out):
         return out
     print('-' * 30)
     print('calling gnsskysub')
@@ -205,7 +215,7 @@ def call_gnscombine(args, inimages, outimage=''):
     """
     if not outimage:
         outimage = 'nsc-' + args.objectid
-    if utils.skip(args, 'combine'):
+    if utils.skip(args, 'combine', outimage):
         return outimage
     print('-' * 30)
     print('calling gnscombine')
@@ -231,7 +241,7 @@ def call_imcombine(args, mask, im, path='./', Nslits=1, longslit=False):
         outimage = '{0}{1}{2}-{3}_{4}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
-    if utils.skip(args, 'combine'):
+    if utils.skip(args, 'combine', outimage):
         return outimage
     print('-' * 30)
     print('Combining images {0} --> {1}'.format(im, outimage))
@@ -262,7 +272,7 @@ def call_gsextract(args, mask):
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
     out = gmos.gsextract.outprefix + infile
-    if utils.skip(args, 'extract'):
+    if utils.skip(args, 'extract', out):
         return out
     print('-' * 30)
     print('calling gsextract')
@@ -278,8 +288,6 @@ def create_gradimage(args, img, bias, suff='grad'):
     `img` should be the raw flat, on which we do everything needed to
     produce a gradient image
     """
-    # for ds9 to open
-    sleep(15)
     # output file names
     output = {'gsreduce': utils.add_prefix(img, gmos.gsreduce)}
     output['gmosaic'] = utils.add_prefix(output['gsreduce'], gmos.gmosaic)
@@ -289,6 +297,8 @@ def create_gradimage(args, img, bias, suff='grad'):
     gradimage = output['gscut']
     if suff:
         gradimage = '{0}_{1}'.format(output['gscut'], suff)
+    if utils.skip(args, 'gradimage', gradimage):
+        return gradimage
 
     # cut the slits
     # if the cut image or grad image exist, no need to do anything else
@@ -296,7 +306,7 @@ def create_gradimage(args, img, bias, suff='grad'):
         rewrite = 'x'
         rewrite = raw_input(
             "Gradient image {0}.fits already exists. Are you" \
-            " sure you want to overwrite it? [y/N] ")
+            " sure you want to overwrite it? [y/N] ".format(gradimage))
         if not rewrite:
             rewrite = 'n'
         while rewrite.lower() not in ('y', 'yes', 'n', 'no'):
@@ -306,6 +316,7 @@ def create_gradimage(args, img, bias, suff='grad'):
             if not rewrite:
                 rewrite = 'n'
         if rewrite.lower() in ('n', 'no'):
+            print('Skipping.')
             return gradimage
     cut_again = 'x'
     if os.path.isfile('{0}.fits'.format(output['gscut'])):
@@ -369,6 +380,8 @@ def create_gradimage(args, img, bias, suff='grad'):
     gscut_approved = 'n'
     # run as many times as necessary for the user to be happy
     print('Now inspecting gscut')
+    if os.path.isfile(secfile):
+        os.remove(secfile)
     while gscut_approved.lower() not in ('y', 'yes'):
         iraf.inspect_gscut(output['gscut'], output['gmosaic'], secfile)
         # this one just waits for any key strike

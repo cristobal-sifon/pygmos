@@ -108,16 +108,18 @@ def copy_MDF(science, cluster, mask):
 def delete(filename):
     ls = glob(filename)
     for filename in ls:
-        os.system('rm {0}'.format(filename))
+        os.remove(filename)
     return
 
 
-def skip(args, task_name):
+def skip(args, task_name, task_output):
     """Check whether a task should be skipped based on `args.begin`"""
-    tasks = ['flat', 'reduce', 'lacos', 'wavelength', 'transform', 'skysub',
-             'combine', 'extract']
+    tasks = ['gradimage', 'flat', 'reduce', 'lacos', 'wavelength', 'transform',
+             'skysub', 'combine', 'extract']
     i = tasks.index(task_name)
-    if args.begin in tasks[i+1:]:
+    if not task_output.endswith('.fits'):
+        task_output = '{0}.fits'.format(task_output)
+    if os.path.isfile(task_output) and args.begin in tasks[i+1:]:
         return True
     return False
 

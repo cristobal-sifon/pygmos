@@ -31,11 +31,11 @@ PyGMOS
 """
 
 # Other packages provided with the code
-from pygmos import paramtools
 from pygmos.inventory import inventory
+from pygmos.utilities import paramtools
 if can_reduce:
-    from pygmos import utils
     from pygmos.spectroscopy import check_gswave, reduction, tasks
+    from pygmos.utilities import utils
 
 # complementary files will be located in the pygmos folder so need to
 # define the environment

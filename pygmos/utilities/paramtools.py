@@ -72,6 +72,8 @@ def parse_args():
     # optional arguments
     add('--align', dest='align', action='store_true',
         help='Produce a FITS file with spectra aligned by wavelength')
+    add('-b', '--bias', dest='bias', default='',
+        help='Bias file')
     add('--begin', dest='begin', default=None,
         help="At which stage of the pipeline to start. Options are" \
              " ('flat', 'reduce', 'lacos', 'wavelength', 'transform'," \
@@ -80,8 +82,6 @@ def parse_args():
     add('--cut-dir', dest='cutdir', default='spectra',
         help='Directory into which the individual 1d spectra will be saved' \
              ' (if --no-cut has not been set)')
-    add('-b', '--bias', dest='bias', default='',
-        help='Bias file')
     add('-i', '--inventory', dest='inventory_only', action='store_true',
         help='Only run the inventory for a given object, without actually' \
              ' reducing the data')

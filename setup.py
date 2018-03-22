@@ -47,7 +47,7 @@ setup(
     long_description=read('README.md'),
     url='https://github.com/cristobal-sifon/pygmos',
     packages=['pygmos', 'pygmos.inventory', 'pygmos.plotting',
-              'pygmos.spectroscopy'],
+              'pygmos.spectroscopy', 'pygmos.utilities'],
     package_data={'pygmos': ['cl/*.cl']},
     scripts=['bin/pygmos'],
     data_files=[('docs', ['docs/pygmos.hlp',

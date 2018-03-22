@@ -11,7 +11,7 @@ except ImportError:
     from pyfits import getheader
 from glob import glob
 
-from .. import utils
+from ..utilities import utils
 
 logger = logging.getLogger(__name__)
 

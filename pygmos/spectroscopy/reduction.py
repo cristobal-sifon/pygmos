@@ -6,8 +6,8 @@ from time import sleep
 from pyraf import iraf
 
 from . import check_gswave, tasks
-from .. import utils
 from ..inventory import inventory
+from ..utilities import utils
 
 
 def longslit(args, waves, assoc):
@@ -87,12 +87,10 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         iraf.chdir(path)
 
         # first gsreduce the flat to create the gradient image for gscut
-        gradimage = tasks.create_gradimage(args, flat, bias)
-        sys.exit()
-
+        grad = tasks.create_gradimage(args, flat, bias)
         flat, comb = tasks.call_gsflat(args, flat)
-        arc = tasks.call_gsreduce(args, arc, flat, bias, comb)
-        science = tasks.call_gsreduce(args, science, flat, bias, comb)
+        arc = tasks.call_gsreduce(args, arc, flat, bias, grad)
+        science = tasks.call_gsreduce(args, science, flat, bias, grad)
         tasks.call_gdisplay(args, science, 1)
         Nslits = utils.get_nslits(science)
         science = tasks.call_lacos(args, science, Nslits)
