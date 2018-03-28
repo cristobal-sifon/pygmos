@@ -113,14 +113,17 @@ def delete(filename):
 
 
 def skip(args, task_name, task_output):
-    """Check whether a task should be skipped based on `args.begin`"""
-    tasks = ['gradimage', 'flat', 'reduce', 'lacos', 'wavelength', 'transform',
-             'skysub', 'combine', 'extract']
-    i = tasks.index(task_name)
+    """Ask the user whether we should skip a task, if the output exists"""
     if not task_output.endswith('.fits'):
         task_output = '{0}.fits'.format(task_output)
-    if os.path.isfile(task_output) and args.begin in tasks[i+1:]:
-        return True
+    if os.path.isfile(task_output):
+        skip = raw_input(
+            'Output file {0} already exists. Replace? [y/N] '.format(
+                task_output))
+        if not skip:
+            return True
+        if skip[0].lower() != 'y':
+            return True
     return False
 
 

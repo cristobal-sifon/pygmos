@@ -74,11 +74,6 @@ def parse_args():
         help='Produce a FITS file with spectra aligned by wavelength')
     add('-b', '--bias', dest='bias', default='',
         help='Bias file')
-    add('--begin', dest='begin', default=None,
-        help="At which stage of the pipeline to start. Options are" \
-             " ('flat', 'reduce', 'lacos', 'wavelength', 'transform'," \
-             " 'skysub', 'combine', 'extract'). If not specified, will" \
-             " start at the beginning.")
     add('--cut-dir', dest='cutdir', default='spectra',
         help='Directory into which the individual 1d spectra will be saved' \
              ' (if --no-cut has not been set)')
