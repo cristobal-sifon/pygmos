@@ -182,7 +182,7 @@ def print_assoc(obj, exp, bias, verbose=True):
 
 def read(target, bias, col=1):
     masks = []
-    with open('{0}.assoc'.format(target)) as f:
+    with open('{0}.assoc'.format(target.replace(' ', '_'))) as f:
         for line in f:
             print(line)
             if line[0] == '#' or line[:13] == 'ObservationID':
