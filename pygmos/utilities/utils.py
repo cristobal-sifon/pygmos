@@ -34,7 +34,7 @@ intro = """
           #                                              #
           # -------------------------------------------- #
           #                                              #
-          #           Last Updated October, 2017         #
+          #            Last Updated March, 2018          #
           #                                              #
           ################################################
 
@@ -118,8 +118,8 @@ def skip(args, task_name, task_output):
         task_output = '{0}.fits'.format(task_output)
     if os.path.isfile(task_output):
         skip = raw_input(
-            'Output file {0} already exists. Replace? [y/N] '.format(
-                task_output))
+            '{1} output file {0} already exists. Replace? [y/N] '.format(
+                task_output, task_name))
         if not skip:
             return True
         if skip[0].lower() != 'y':

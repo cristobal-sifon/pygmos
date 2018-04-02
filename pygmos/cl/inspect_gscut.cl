@@ -8,6 +8,9 @@ begin
 
     display(mosaic//"[sci,1]", 1, zs-, zr+)
 
+    del inimage//"_lo.coords"
+    del inimage//"_hi.coords"
+
     real x1,x2,y1,y2,xcen
     int ids
     for(i=1;i<=100;i+=1)

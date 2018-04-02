@@ -209,6 +209,7 @@ class Slit(BaseMaskHeader):
         self.frame = frame
         for name in self.data.colnames:
             setattr(self, name.lower(), self.data[name])
+        self.id = self.data['ID']
         self.x, self.y = self.get_position()
         self.width, self.height = self.size_in_frame()
         self._valid_reg_options = None
@@ -280,7 +281,7 @@ class Slit(BaseMaskHeader):
             scale = 1 / self.header.pixscale.to(u.arcsec).value
         return scale*self.slitsize_x, scale*self.slitsize_y
 
-    def region(self, **kwargs):
+    def region(self, id_label=True, **kwargs):
         """Create a DS9 region in region file format.
 
         See http://ds9.si.edu/doc/ref/region.html
@@ -306,8 +307,6 @@ class Slit(BaseMaskHeader):
             args = [3600*self.width, 3600*self.height, self.pa]
         kwargs['unit'] = '"'
         reg_str = reg.generate(
-            #self.region_shape, self.x, self.y, 3600*self.width,
-            #3600*self.height, self.pa, unit='"', **kwargs)
             self.region_shape, self.x, self.y, *args, **kwargs)
         return reg_str
 
@@ -407,7 +406,7 @@ class Mask(BaseMaskHeader):
             ax.add_collection(science_collection)
         return science_collection
 
-    def regions(self, output='default', fig=None, color='green',
+    def regions(self, output='default', fig=None, color='green', show_id=True,
                 **kwargs):
         """Create a DS9 region file with the mask science slits
 
@@ -441,7 +440,10 @@ class Mask(BaseMaskHeader):
             if slit['priority'] == '0':
                 continue
             slit = Slit(slit, self.file)
-            regions.append(slit.region())
+            if show_id:
+                regions.append(slit.region(text=slit.id))
+            else:
+                regions.append(slit.region())
         if output == 'default':
             output = '{0}.reg'.format(self.name)
         with open(output, 'w') as f:

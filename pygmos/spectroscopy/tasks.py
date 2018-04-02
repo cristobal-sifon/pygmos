@@ -139,20 +139,23 @@ def call_lacos(args, science, Nslits=0, longslit=False):
 
 
 def call_gswave(args, arc):
-    #if utils.skip(args, 'wavelength'):
-        #return
     print('-' * 30)
     print('calling gswavelength on', arc)
+    output_gstrans = utils.add_prefix(
+        arc, gmos.gstransform).replace('_lacos', '')
+    if utils.skip(args, 'transform', output_gstrans):
+        return
     gmos.gswavelength(arc)
     print('-' * 30)
     return
 
 
 def call_gstransform(args, image, arc):
-    if image[-5:] == 'lacos':
-        out = gmos.gstransform.outpref + image[:-6]
-    else:
-        out = gmos.gstransform.outpref + image
+    #if image[-5:] == 'lacos':
+        #out = gmos.gstransform.outpref + image[:-6]
+    #else:
+        #out = gmos.gstransform.outpref + image
+    out = utils.add_prefix(image, gmos.gstransform).replace('_lacos', '')
     if utils.skip(args, 'transform', out):
         return out
     print('-' * 30)
@@ -238,15 +241,19 @@ def call_imcombine(args, mask, im, path='./', Nslits=1, longslit=False):
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
             gmos.gsreduce.outpref, args.objectid.replace(' ', '_'))
     else:
-        outimage = '{0}{1}{2}-{3}_{4}'.format(
+        #outimage = '{0}{1}{2}-{3}_{4}'.format(
+            #gmos.gsskysub.outpref, gmos.gstransform.outpref,
+            #gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
+        outimage = '{0}{1}{2}_{3}'.format(
             gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
+            gmos.gsreduce.outpref,  mask.replace('-', ''))
     if utils.skip(args, 'combine', outimage):
         return outimage
     print('-' * 30)
     print('Combining images {0} --> {1}'.format(im, outimage))
     os.system('cp {0}.fits {1}.fits'.format(im[0], outimage))
-    f = pyfits.open('{0}.fits'.format(os.path.join(path, im[0])))
+    #f = pyfits.open('{0}.fits'.format(os.path.join(path, im[0])))
+    f = pyfits.open('{0}.fits'.format(im[0]))
     gain = float(f[0].header['GAINMULT'])
     rdnoise = float(f[0].header['RDNOISE'])
     f.close()
@@ -262,23 +269,15 @@ def call_imcombine(args, mask, im, path='./', Nslits=1, longslit=False):
     return outimage
 
 
-def call_gsextract(args, mask):
-    if mask == 'longslit':
-        infile = '{0}{1}{2}-{3}_ls'.format(
-            gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'))
-    else:
-        infile = '{0}{1}{2}-{3}_mask{4}'.format(
-            gmos.gsskysub.outpref, gmos.gstransform.outpref,
-            gmos.gsreduce.outpref, args.objectid.replace(' ', '_'), mask)
-    out = gmos.gsextract.outprefix + infile
+def call_gsextract(args, img):
+    out = utils.add_prefix(img, gmos.gsextract)
     if utils.skip(args, 'extract', out):
         return out
     print('-' * 30)
     print('calling gsextract')
-    print(infile, '-->', out)
+    print(img, '-->', out)
     utils.delete(out + '.fits')
-    gmos.gsextract(infile)
+    gmos.gsextract(img)
     print('-' * 30)
     return out
 
@@ -300,6 +299,7 @@ def create_gradimage(args, img, bias, suff='grad'):
     if utils.skip(args, 'gradimage', gradimage):
         return gradimage
 
+    """
     # cut the slits
     # if the cut image or grad image exist, no need to do anything else
     if os.path.isfile('{0}.fits'.format(gradimage)):
@@ -318,14 +318,16 @@ def create_gradimage(args, img, bias, suff='grad'):
         if rewrite.lower() in ('n', 'no'):
             print('Skipping.')
             return gradimage
+    """
+
     cut_again = 'x'
     if os.path.isfile('{0}.fits'.format(output['gscut'])):
         cut_again = raw_input(
-            'File {0}.fits already exists. Write "yes" if you want to run' \
-            ' gscut again instead of using the existing file (which you' \
-            ' will be able to review and modify in the next step).' \
-            ' Otherwise, please write "no" or simply press Enter to' \
-            ' skip'.format(output['gscut']))
+            'Gradimage {0}.fits already exists. Write "yes" if you want to' \
+            ' run gscut again instead of using the existing' \
+            ' file (which you will be able to review and modify in the next' \
+            ' step). Otherwise, please write "no" or simply press Enter to' \
+            ' skip. '.format(output['gscut']))
         if not cut_again:
             cut_again = 'n'
         while cut_again not in ('y', 'yes', 'n', 'no'):
@@ -338,6 +340,7 @@ def create_gradimage(args, img, bias, suff='grad'):
         cut_again = 'yes'
 
     if cut_again in ('y', 'yes'):
+    #if True;
         # for now
         bias = args.bias
         if args.nobias:
@@ -368,11 +371,11 @@ def create_gradimage(args, img, bias, suff='grad'):
         return gradimage
 
     msg_hold = \
-        "Please check whether you like the result of gscut. If you\n" \
-        " do not, then please modify the SECY1 and SECY2 entries\n" \
-        " for the faulty slits (e.g., with fv) and press Enter\n" \
-        " when you are ready. The new slit locations will be plotted\n" \
-        " and you will be prompted again to confirm whether you are happy."
+        "\nPlease check whether you like the result of gscut. If you" \
+        " do not, then please open {0} and modify the SECY1 and SECY2" \
+        " entries for the faulty slits (e.g., with fv) and press Enter" \
+        " when you are ready. The new slit locations will be plotted" \
+        " and you will be prompted again to confirm whether you are happy. "
     msg_ready = \
         "Do you want to keep the current slits? [y/N] "
     msg_repeat = "Sorry, cannot understand answer. {0}".format(msg_ready)
@@ -385,7 +388,8 @@ def create_gradimage(args, img, bias, suff='grad'):
     while gscut_approved.lower() not in ('y', 'yes'):
         iraf.inspect_gscut(output['gscut'], output['gmosaic'], secfile)
         # this one just waits for any key strike
-        raw_input(msg_hold)
+        raw_input(msg_hold.format(output['gscut']))
+        iraf.inspect_gscut(output['gscut'], output['gmosaic'], secfile)
         gscut_approved = raw_input(msg_ready)
         if gscut_approved == '':
             gscut_approved = 'y'
@@ -401,7 +405,7 @@ def create_gradimage(args, img, bias, suff='grad'):
     return gradimage
 
 
-def cut_spectra(args, mask, spec='1d'):
+def cut_spectra(args, filename, mask, spec='1d', path='./'):
     """
     Takes the extracted spectra and copies them to a single folder called
     spectra/ (by default) in the parent folder. All spectra from all objects 
@@ -414,33 +418,28 @@ def cut_spectra(args, mask, spec='1d'):
     utils.makedir(args.cutdir)
     spectra = []
     obj = args.objectid.replace(' ', '_')
+    mask = mask.replace('-', '')
     if spec == '1d':
         prefix = gmos.gsextract.outprefix + gmos.gsskysub.outpref + \
                  gmos.gstransform.outprefix + gmos.gsreduce.outpref
     elif spec == '2d':
         prefix = gmos.gsskysub.outpref + gmos.gstransform.outprefix + \
                  gmos.gsreduce.outpref
-    filename = os.path.join(
-        args.objectid.replace(' ', '_'), 'mask{0}'.format(mask),
-        '{0}-{1}_mask{2}'.format(prefix, obj, mask))
+    filename = os.path.join(path, filename)
     Nslits = utils.get_nslits(filename)
-    for i in range(1, Nslits + 1):
-        if i < 10:
-            #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
-                #mask + '_0' + str(i) + prefix[0]
-            out = os.path.join(
-                args.cutdir,
-                '{0}_{1}_0{2}{3}'.format(obj, mask, i, prefix[0]))
-            #utils.delete(out + '.fits')
-            #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
-        else:
-            #out = cutdir + '/' + cluster.replace(' ', '_') + '_' + \
-                #mask + '_' + str(i) + prefix[0]
-            out = os.path.join(
-                args.cutdir,
-                '{0}_{1}_{2}{3}'.format(obj, mask, i, prefix[0]))
-            #utils.delete(out + '.fits')
-            #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
+    for i in range(1, Nslits+1):
+        #if i < 10:
+            #out = os.path.join(
+                #args.cutdir,
+                #'{0}_{1}_0{2}{3}'.format(obj, mask, i, prefix[0]))
+            ##utils.delete(out + '.fits')
+            ##iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
+        #else:
+        out = os.path.join(
+            args.cutdir,
+            '{0}_{1}_{2:02d}{3}'.format(obj, mask, i, prefix[0]))
+        #utils.delete(out + '.fits')
+        #iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
         utils.delete(out + '.fits')
         iraf.imcopy(filename+'[sci,'+str(i)+']', out, verbose='no')
     print('-' * 30)

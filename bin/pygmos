@@ -77,9 +77,6 @@ def main():
     # open DS9?
     if args.ds9:
         os.system('ds9 &')
-        if args.begin:
-            print('Giving ds9 10 seconds to open...')
-            sleep(10)
     # GMOS display format
     iraf.set(stdimage='imtgmos')
     if args.align:

@@ -4,6 +4,7 @@ import os
 import sys
 from time import sleep
 from pyraf import iraf
+from iraf import gemini, gmos
 
 from . import check_gswave, tasks
 from ..inventory import inventory
@@ -116,7 +117,7 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
             added = tasks.call_imcombine(
                 args, mask, combine, path, Nslits)
             tasks.call_gdisplay(args, added, 1)
-            spectra = tasks.call_gsextract(args, str(mask))
+            spectra = tasks.call_gsextract(args, added)
             if args.align:
                 aligned = tasks.call_align(added, align, Nslits)
                 tasks.call_gdisplay(args, aligned, 1)
@@ -124,8 +125,8 @@ def mos(args, mask, files_science, assoc, align_suffix='_aligned'):
         iraf.chdir('../..')
 
     # cut spectra
-    tasks.cut_spectra(args, str(mask), spec='2d')
-    tasks.cut_spectra(args, str(mask), spec='1d')
+    tasks.cut_spectra(args, added, mask, spec='2d', path=path)
+    tasks.cut_spectra(args, spectra, mask, spec='1d', path=path)
     check_gswave.main(
         args.objectid, mask, gmos.gswavelength.logfile, 'gswcheck.log')
     return Nmasks
