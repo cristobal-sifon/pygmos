@@ -23,7 +23,9 @@ def dump_file(infile):
                 outfile = sys.stdout
             else:
                 outfile = open(outfile, 'w')
-            with open(infile) as f:
+            # import pdb; pdb.set_trace()
+            new_infile = infile.replace('/pygmos/docs','/docs')  # the docs directory is a level below pygmos
+            with open(new_infile) as f:
                 print(f.read(), file=outfile, end='')
             sys.exit()
     return DumpFile
