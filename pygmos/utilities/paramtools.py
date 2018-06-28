@@ -23,9 +23,7 @@ def dump_file(infile):
                 outfile = sys.stdout
             else:
                 outfile = open(outfile, 'w')
-            # import pdb; pdb.set_trace()
-            new_infile = infile.replace('/pygmos/docs','/docs')  # the docs directory is a level below pygmos
-            with open(new_infile) as f:
+            with open(infile) as f:
                 print(f.read(), file=outfile, end='')
             sys.exit()
     return DumpFile
@@ -105,14 +103,14 @@ def parse_args():
              ' one')
 
     # dump files
+    docs_dir = join(environ['pygmos_path'],'docs')
+    docs_dir = docs_dir.replace('/pygmos/docs','/docs')  # the actual docs directory is a level below pygmos
     add('-d', dest='dump_file', nargs='?', default=None,
         help='Dump a sample parameter file to the console or to a file',
-        action=dump_file(join(environ['pygmos_path'], 'docs',
-                              'pygmos.params')))
+        action=dump_file(join(docs_dir, 'pygmos.params')))
     add('-dd', dest='dump_file_extended', nargs='?', default=None,
         help='Dump an extended parameter file to the console or to a file',
-        action=dump_file(join(environ['pygmos_path'],
-                              'docs', 'pygmos.params.extended')))
+        action=dump_file(join(docs_dir, 'pygmos.params.extended')))
 
     return parser
 
