@@ -103,14 +103,14 @@ def parse_args():
              ' one')
 
     # dump files
+    # the docs directory is a level above pygmos
+    docs_dir = join(split(environ['pygmos_path'])[0], 'docs')
     add('-d', dest='dump_file', nargs='?', default=None,
         help='Dump a sample parameter file to the console or to a file',
-        action=dump_file(join(environ['pygmos_path'], 'docs',
-                              'pygmos.params')))
+        action=dump_file(join(docs_dir, 'pygmos.params')))
     add('-dd', dest='dump_file_extended', nargs='?', default=None,
         help='Dump an extended parameter file to the console or to a file',
-        action=dump_file(join(environ['pygmos_path'],
-                              'docs', 'pygmos.params.extended')))
+        action=dump_file(join(docs_dir, 'pygmos.params.extended')))
 
     return parser
 
