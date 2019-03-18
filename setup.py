@@ -7,10 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 
 import os
 import re
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import find_packages, setup
 
 # folder where pygmos is stored
 here = os.path.abspath(os.path.dirname(__file__))
@@ -37,6 +34,7 @@ def read(fname):
     return open(os.path.join(here, fname)).read()
 
 
+print(find_packages())
 
 setup(
     name='pygmos',
@@ -46,9 +44,9 @@ setup(
     author_email='sifon@astro.princeton.edu',
     long_description=read('README.md'),
     url='https://github.com/cristobal-sifon/pygmos',
-    packages=['pygmos', 'pygmos.inventory', 'pygmos.plotting',
-              'pygmos.spectroscopy', 'pygmos.utilities'],
+    packages=find_packages() + ['data', 'docs'],
     package_data={'pygmos': ['cl/*.cl']},
+    add_package_data=True,
     scripts=['bin/pygmos'],
     data_files=[('docs', ['docs/pygmos.hlp',
                           'docs/pygmos.params',
