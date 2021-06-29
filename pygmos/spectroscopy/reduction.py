@@ -17,13 +17,23 @@ def longslit(args, waves, assoc):
     mask = 'longslit'
     path = os.path.join(args.objectid, mask).replace(' ', '_')
 
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
     for wave in waves:
-        flat = inventory.get_file(assoc, mask, obs='flat', wave=wave)
-        # finding the flat is enough to know that the mask exists.
-        if flat:
-            arc = inventory.get_file(assoc, mask, obs='arc', wave=wave)
-            science = inventory.get_file(assoc, mask, obs='science', wave=wave)
-            iraf.chdir(path)
+        flats = inventory.get_file_longslit(assoc, obs='flat', wave=wave)     
+        arcs = inventory.get_file_longslit(assoc, obs='arc', wave=wave)
+        sciences = inventory.get_file_longslit(assoc, obs='science', wave=wave)
+
+        iraf.chdir(path)
+        
+        os.symlink(os.path.join('../../', args.bias), args.bias)
+        
+        for flat, arc, science in zip(flats, arcs, sciences):
+            os.symlink(os.path.join('../../', '{}.fits'.format(flat)), '{}.fits'.format(flat))
+            os.symlink(os.path.join('../../', '{}.fits'.format(arc)), '{}.fits'.format(arc))
+            os.symlink(os.path.join('../../', '{}.fits'.format(science)), '{}.fits'.format(science))
+            
             flat, comb = tasks.call_gsflat(args, flat)
             arc = tasks.call_gsreduce(args, arc, flat, args.bias, comb)
             science = tasks.call_gsreduce(args, science, flat, args.bias, comb)
@@ -36,19 +46,20 @@ def longslit(args, waves, assoc):
             science = tasks.call_gstransform(args, science, arc)
             tasks.call_gdisplay(args, science, 1)
             combine.append(tasks.call_gsskysub(args, science))
-            if len(combine) == len(waves):
-                added = tasks.call_imcombine(
-                    args, str(mask), combine, longslit=True)
-                tasks.call_gdisplay(args, added, 1)
+            
+        if len(combine) == len(waves):
+            added = tasks.call_imcombine(
+                args, str(mask), combine, longslit=True)
+            tasks.call_gdisplay(args, added, 1)
 
-        spectra = tasks.call_gsextract(args, mask)
+        spectra = tasks.call_gsextract(args, added)
         Naps = raw_input('Number of apertures extracted: ')
         # In case you don't see the message after so many
         # consecutive "Enters"
         while Naps == '':
             Naps = raw_input('Please enter number of apertures extracted: ')
         Naps = int(Naps)
-        tasks.cut_apertures(args.objectid, Naps)
+        tasks.cut_apertures(args, infile, outroot, Naps)
         utils.delete('tmp*')
         iraf.chdir('../..')
     return

@@ -13,6 +13,9 @@ from glob import glob
 
 from ..utilities import utils
 
+import numpy as np
+from astropy.table import Table
+
 logger = logging.getLogger(__name__)
 
 
@@ -221,7 +224,22 @@ def run(args):
     return masks
 
 
+def get_file_longslit(assoc, obs='science', wave=670):
+    """
+    Select rows in the association file that contain 
+    the type of observation of interest for the central
+    wavelength setup of choice.
+    """
+    data = Table.read(assoc, format='ascii')
+    return np.array(data[data['Wave']==wave][str.capitalize(obs)])
+
+
 def get_file(assoc, science, mask=1, obs='science', wave=670):
+    """
+    !!! As called in other parts of the code, this function 
+    will only work for the MOS track, not the longslit functionality
+    of the code.
+    """
     assocfile = open(assoc)
     while assocfile.readline()[0] == '#':
         pass

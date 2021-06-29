@@ -89,8 +89,10 @@ def main():
     if args.nod:
         print('Reducing Nod-and-Shuffle observations. Remember that the')
         print('bias image must be overscan subtracted (interactively).')
-
-    if args.masks == 'longslit':
+    
+    # arg.masks is sometimes read as a list instead of a string
+    if (args.masks == 'longslit') or (args.masks == ['longslit']):
+        args.masks = 'longslit'
         gmos.gsreduce.mdfdir = 'gmos$data'
         gmos.gsflat.mdfdir = 'gmos$data'
         reduction.longslit(args, waves, assoc)
