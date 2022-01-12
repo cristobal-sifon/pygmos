@@ -17,8 +17,7 @@ def longslit(args, waves, assoc):
     mask = 'longslit'
     path = os.path.join(args.objectid, mask).replace(' ', '_')
 
-    if not os.path.exists(path):
-        os.makedirs(path)
+    utils.makedir(path)
         
     for wave in waves:
         flats = inventory.get_file_longslit(assoc, obs='flat', wave=wave)     
@@ -27,12 +26,14 @@ def longslit(args, waves, assoc):
 
         iraf.chdir(path)
         
-        os.symlink(os.path.join('../../', args.bias), args.bias)
-        
+        utils.create_symlink(args.bias, args.force_overwrite)
+
         for flat, arc, science in zip(flats, arcs, sciences):
-            os.symlink(os.path.join('../../', '{}.fits'.format(flat)), '{}.fits'.format(flat))
-            os.symlink(os.path.join('../../', '{}.fits'.format(arc)), '{}.fits'.format(arc))
-            os.symlink(os.path.join('../../', '{}.fits'.format(science)), '{}.fits'.format(science))
+            #os.symlink(os.path.join('../../', '{}.fits'.format(flat)), '{}.fits'.format(flat))
+            #os.symlink(os.path.join('../../', '{}.fits'.format(arc)), '{}.fits'.format(arc))
+            #os.symlink(os.path.join('../../', '{}.fits'.format(science)), '{}.fits'.format(science))
+            for f in (flat, arc, science):
+                utils.create_symlink(f, args.force_overwrite)
             
             flat, comb = tasks.call_gsflat(args, flat)
             arc = tasks.call_gsreduce(args, arc, flat, args.bias, comb)
@@ -59,7 +60,7 @@ def longslit(args, waves, assoc):
         while Naps == '':
             Naps = raw_input('Please enter number of apertures extracted: ')
         Naps = int(Naps)
-        tasks.cut_apertures(args, infile, outroot, Naps)
+        tasks.cut_apertures(args, spectra, '{}_'.format(args.objectid), Naps)
         utils.delete('tmp*')
         iraf.chdir('../..')
     return

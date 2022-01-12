@@ -77,6 +77,8 @@ def parse_args():
     add('--cut-dir', dest='cutdir', default='spectra',
         help='Directory into which the individual 1d spectra will be saved' \
              ' (if --no-cut has not been set)')
+    add('-f', dest='force_overwrite', action='store_true',
+        help='Force overwrite')
     add('-i', '--inventory', dest='inventory_only', action='store_true',
         help='Only run the inventory for a given object, without actually' \
              ' reducing the data')

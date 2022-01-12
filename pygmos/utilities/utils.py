@@ -51,6 +51,32 @@ def add_prefix(filename, task):
     return os.path.join(*tree)
 
 
+def copy_MDF(science, cluster, mask):
+    head = pyfits.open(science + '.fits')[0].header
+    mdffile = head['MASKNAME']
+    targetdir = cluster.replace(' ', '_') + '/mask' + mask + '/'
+    if not os.path.isfile(targetdir):
+        os.system('cp -p {0}.fits {1}'.format(mdffile, targetdir))
+    return
+
+
+def create_symlink(filename, overwrite=False):
+    """Create a symlink for a file in the working directory"""
+    if filename[-5:].lower() != '.fits' and filename[-4:].lower() != '.fit':
+        filename = '{}.fits'.format(filename)
+    if os.path.isfile(filename) and overwrite:
+        os.unlink(filename)
+    os.symlink('../../{}'.format(filename), filename)
+    return
+
+
+def delete(filename):
+    ls = glob(filename)
+    for filename in ls:
+        os.remove(filename)
+    return
+
+
 def get_science_files(assocfile, mask):
     file = open(assocfile)
     head = '#'
@@ -94,37 +120,6 @@ def get_wavelengths(assocfile):
             if not w in waves:
                 waves.append(w)
     return waves
-
-
-def copy_MDF(science, cluster, mask):
-    head = pyfits.open(science + '.fits')[0].header
-    mdffile = head['MASKNAME']
-    targetdir = cluster.replace(' ', '_') + '/mask' + mask + '/'
-    if not os.path.isfile(targetdir):
-        os.system('cp -p {0}.fits {1}'.format(mdffile, targetdir))
-    return
-
-
-def delete(filename):
-    ls = glob(filename)
-    for filename in ls:
-        os.remove(filename)
-    return
-
-
-def skip(args, task_name, task_output):
-    """Ask the user whether we should skip a task, if the output exists"""
-    if not task_output.endswith('.fits'):
-        task_output = '{0}.fits'.format(task_output)
-    if os.path.isfile(task_output):
-        skip = raw_input(
-            '{1} output file {0} already exists. Replace? [y/N] '.format(
-                task_output, task_name))
-        if not skip:
-            return True
-        if skip[0].lower() != 'y':
-            return True
-    return False
 
 
 def get_nslits(filename):
@@ -183,6 +178,23 @@ def removedir(dirname):
         os.chdir('..')
         os.rmdir(dirname)
     return
+
+
+def skip(args, task_name, task_output):
+    """Ask the user whether we should skip a task, if the output exists"""
+    if not task_output.endswith('.fits'):
+        task_output = '{0}.fits'.format(task_output)
+    if os.path.isfile(task_output):
+        if args.force_overwrite:
+            return False
+        skip = raw_input(
+            '{1} output file {0} already exists. Replace? [y/N] '.format(
+                task_output, task_name))
+        if not skip:
+            return True
+        if skip[0].lower() != 'y':
+            return True
+    return False
 
 
 def write_offsets(inimages, output):
